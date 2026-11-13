@@ -144,18 +144,28 @@
 }
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box;
   background: #121212;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 20px 12px 32px;
+  padding: 12px;
 }
 
 .face {
-  width: min(1180px, 100%);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   background: var(--face);
   border: 1px solid #111;
+}
+
+.workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
 }
 
 .transport {
@@ -248,7 +258,8 @@ h1 {
 }
 
 .seq-scroll {
-  overflow-x: auto;
+  overflow: auto;
+  height: 100%;
   background: #161616;
   padding: 8px 8px 10px 0;
 }
@@ -257,14 +268,17 @@ h1 {
   --gutter: 132px;
   --gap: 2px;
   width: max(100%, max-content);
+  height: 100%;
 }
 
 .seq {
   position: relative;
   display: grid;
   grid-template-columns: var(--gutter) repeat(24, minmax(22px, 1fr));
+  grid-template-rows: 14px repeat(7, minmax(32px, 1fr));
   gap: var(--gap);
   width: 100%;
+  height: 100%;
 }
 
 .corner,
@@ -285,7 +299,8 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  height: 26px;
+  height: auto;
+  min-height: 32px;
   padding-right: 6px;
 }
 
@@ -341,7 +356,8 @@ h1 {
 
 .cell {
   position: relative;
-  height: 26px;
+  height: auto;
+  min-height: 32px;
   padding: 0;
   border: 0;
   border-radius: 2px;
@@ -361,6 +377,25 @@ h1 {
   border-radius: 1px;
   background: var(--led);
   opacity: var(--v);
+}
+
+.cell.note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a0d06;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 9px;
+}
+
+.cell.note em {
+  position: relative;
+  z-index: 1;
+  font-style: normal;
+}
+
+.cell.note.is-on {
+  background: #ffb067;
 }
 
 .cell.is-playhead {
@@ -390,6 +425,108 @@ h1 {
   z-index: 3;
 }
 
+.synth {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: 14px;
+  background: #1a1a1a;
+  border-left: 1px solid var(--line);
+}
+
+.synth-name {
+  margin: 0;
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.knob {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--dim);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+  flex: 1;
+  min-height: 140px;
+}
+
+.key {
+  border: 1px solid #3a3a3a;
+  border-radius: 3px;
+  background: #2a2a2a;
+  color: #c8c8c8;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.key.is-on {
+  background: var(--led);
+  border-color: var(--led);
+  color: #1a0d06;
+}
+
+.rec {
+  width: 28px;
+  height: 26px;
+  border-radius: 2px;
+}
+
+.rec i {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8a3030;
+}
+
+.rec.is-on {
+  border-color: #e23d3d;
+}
+
+.rec.is-on i {
+  background: #ff3030;
+}
+
+.takes {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  overflow-x: auto;
+  padding: 8px;
+  border-top: 1px solid var(--line);
+  background: #181818;
+}
+
+.take {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.take audio {
+  width: 210px;
+  height: 32px;
+}
+
+.take a {
+  color: var(--ink);
+}
+
 @media (max-width: 860px) {
   .app {
     padding: 0;
@@ -403,5 +540,16 @@ h1 {
   }
   .seg {
     margin-left: 0;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(280px, 1fr) auto;
+  }
+  .synth {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .keys {
+    min-height: 96px;
   }
 }

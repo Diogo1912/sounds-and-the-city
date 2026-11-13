@@ -1,8 +1,8 @@
-import { isCityId, presetPatterns } from "../kits.ts";
-import type { CityId } from "../types.ts";
+import { emptySongs, isCityId } from "../kits.ts";
+import type { CityId, Song } from "../types.ts";
 
-const SETTINGS_KEY = "city-rhythm-v3";
-const PATTERN_KEY = "city-rhythm-patterns-v3";
+const SETTINGS_KEY = "city-rhythm-v4";
+const SONG_KEY = "city-rhythm-songs-v4";
 
 export type Settings = {
   cityId: CityId;
@@ -37,32 +37,40 @@ export function saveSettings(settings: Settings): void {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
-export function loadPatterns(): Record<CityId, number[][]> {
-  const presets = presetPatterns();
+export function loadSongs(): Record<CityId, Song> {
+  const songs = emptySongs();
   try {
-    const raw = localStorage.getItem(PATTERN_KEY);
-    if (!raw) return presets;
+    const raw = localStorage.getItem(SONG_KEY);
+    if (!raw) return songs;
     const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return presets;
-    const record = parsed as Partial<Record<CityId, number[][]>>;
-    for (const id of Object.keys(presets) as CityId[]) {
-      const rows = record[id];
-      if (!isPattern(rows, presets[id].length)) continue;
-      presets[id] = rows.map((row) => row.slice());
+    if (!parsed || typeof parsed !== "object") return songs;
+    const record = parsed as Partial<Record<CityId, Song>>;
+    for (const id of Object.keys(songs) as CityId[]) {
+      const song = record[id];
+      if (!isSong(song)) continue;
+      songs[id] = {
+        drums: song.drums.map((row) => row.slice()),
+        notes: song.notes.slice(),
+      };
     }
-    return presets;
+    return songs;
   } catch {
-    return presets;
+    return songs;
   }
 }
 
-export function savePatterns(patterns: Record<CityId, number[][]>): void {
-  localStorage.setItem(PATTERN_KEY, JSON.stringify(patterns));
+export function saveSongs(songs: Record<CityId, Song>): void {
+  localStorage.setItem(SONG_KEY, JSON.stringify(songs));
 }
 
-function isPattern(value: unknown, voices: number): value is number[][] {
-  if (!Array.isArray(value) || value.length !== voices) return false;
-  return value.every((row) => Array.isArray(row) && row.length === 24 && row.every((cell) => typeof cell === "number"));
+function isSong(value: unknown): value is Song {
+  if (!value || typeof value !== "object") return false;
+  const song = value as Song;
+  if (!Array.isArray(song.drums) || song.drums.length !== 6) return false;
+  if (!song.drums.every((row) => Array.isArray(row) && row.length === 24 && row.every((cell) => typeof cell === "number"))) {
+    return false;
+  }
+  return Array.isArray(song.notes) && song.notes.length === 24 && song.notes.every((note) => note === null || typeof note === "number");
 }
 
 function clamp(value: unknown, min: number, max: number, fallback: number): number {

@@ -1,4 +1,4 @@
-import { makeNoise, triggerVoice } from "./voices.ts";
+import { makeNoise, triggerSynth, triggerVoice } from "./voices.ts";
 import { secondsPerStep } from "../lib/time.ts";
 import type { CityId, StepHit } from "../types.ts";
 
@@ -10,7 +10,13 @@ type Transport = {
 export class Engine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private compressor: DynamicsCompressorNode | null = null;
   private noise: AudioBuffer | null = null;
+  private recorder: MediaRecorder | null = null;
+  private recordChunks: Blob[] = [];
+  private recordDest: MediaStreamAudioDestinationNode | null = null;
+  private cutoff = 0.5;
+  private decay = 0.35;
   private timer = 0;
   private nextTime = 0;
   private step = 0;
@@ -29,6 +35,11 @@ export class Engine {
 
   setCity(city: CityId): void {
     this.city = city;
+  }
+
+  setSynth(next: { cutoff: number; decay: number }): void {
+    this.cutoff = next.cutoff;
+    this.decay = next.decay;
   }
 
   setTransport(next: Transport): void {
@@ -83,10 +94,46 @@ export class Engine {
     if (!this.master || !this.noise) return;
     const time = ctx.currentTime + 0.02;
     for (const hit of this.pattern[this.step] ?? []) {
-      if (!hit.muted && hit.velocity > 0) {
-        triggerVoice(ctx, this.master, this.noise, this.city, hit.voice, time, hit.velocity);
-      }
+      this.playHit(ctx, this.master, time, hit);
     }
+  }
+
+  previewSynth(midi: number): void {
+    const ctx = this.ensure();
+    if (ctx.state === "suspended") void ctx.resume();
+    if (!this.master) return;
+    triggerSynth(ctx, this.master, this.city, midi, ctx.currentTime + 0.02, 0.9, this.cutoff, this.decay);
+  }
+
+  startRecording(): void {
+    const ctx = this.ensure();
+    if (!this.compressor || this.recorder) return;
+    this.recordChunks = [];
+    this.recordDest = ctx.createMediaStreamDestination();
+    this.compressor.connect(this.recordDest);
+    const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
+    this.recorder = new MediaRecorder(this.recordDest.stream, { mimeType: mime });
+    this.recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) this.recordChunks.push(event.data);
+    };
+    this.recorder.start();
+  }
+
+  stopRecording(): Promise<Blob> {
+    const recorder = this.recorder;
+    if (!recorder) return Promise.resolve(new Blob());
+    return new Promise((resolve) => {
+      recorder.onstop = () => {
+        const blob = new Blob(this.recordChunks, { type: recorder.mimeType || "audio/webm" });
+        if (this.recordDest) this.compressor?.disconnect(this.recordDest);
+        this.recordDest = null;
+        this.recorder = null;
+        this.recordChunks = [];
+        resolve(blob);
+      };
+      if (recorder.state !== "inactive") recorder.stop();
+      else resolve(new Blob());
+    });
   }
 
   dispose(): void {
@@ -112,6 +159,7 @@ export class Engine {
     compressor.connect(ctx.destination);
     this.ctx = ctx;
     this.master = master;
+    this.compressor = compressor;
     this.noise = makeNoise(ctx);
     return ctx;
   }
@@ -125,15 +173,22 @@ export class Engine {
       const count = this.pattern.length || 24;
       const index = ((this.step % count) + count) % count;
       for (const hit of this.pattern[index] ?? []) {
-        if (!hit.muted && hit.velocity > 0) {
-          triggerVoice(ctx, this.master, this.noise, this.city, hit.voice, when, hit.velocity);
-        }
+        this.playHit(ctx, this.master, when, hit);
       }
       this.queue.push({ index, when });
       this.step = (index + 1) % count;
       this.nextTime = when + secondsPerStep(this.bpm);
     }
     this.flush(ctx.currentTime);
+  }
+
+  private playHit(ctx: AudioContext, dest: AudioNode, time: number, hit: StepHit): void {
+    if (!this.noise || hit.muted || hit.velocity <= 0) return;
+    if (hit.voice === "synth" && hit.note != null) {
+      triggerSynth(ctx, dest, this.city, hit.note, time, hit.velocity, this.cutoff, this.decay);
+      return;
+    }
+    triggerVoice(ctx, dest, this.noise, this.city, hit.voice, time, hit.velocity);
   }
 
   private flush(now: number): void {

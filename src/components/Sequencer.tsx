@@ -1,23 +1,39 @@
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
+import { noteName } from "@/lib/notes";
 import { formatHour } from "@/lib/time";
 import type { Voice } from "@/types";
 
 type Props = {
   voices: Voice[];
   pattern: number[][];
+  notes: (number | null)[];
+  synthName: string;
   step: number;
   muted: ReadonlySet<string>;
   onToggleMute: (id: string) => void;
   onPreview: (id: string) => void;
   onJump: (step: number) => void;
   onWrite: (voice: number, step: number, velocity: number) => void;
+  onWriteNote: (step: number, midi: number | null) => void;
 };
 
 const HOURS = 24;
 
-export function Sequencer({ voices, pattern, step, muted, onToggleMute, onPreview, onJump, onWrite }: Props) {
+export function Sequencer({
+  voices,
+  pattern,
+  notes,
+  synthName,
+  step,
+  muted,
+  onToggleMute,
+  onPreview,
+  onJump,
+  onWrite,
+  onWriteNote,
+}: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const painting = useRef<number | null>(null);
 
@@ -71,6 +87,37 @@ export function Sequencer({ voices, pattern, step, muted, onToggleMute, onPrevie
               onWrite={onWrite}
             />
           ))}
+          <div className={muted.has("synth") ? "gutter is-muted" : "gutter"}>
+            <button type="button" className="track-name" onClick={() => onPreview("synth")}>
+              {synthName}
+            </button>
+            <Button
+              type="button"
+              size="icon-xs"
+              variant="outline"
+              className={muted.has("synth") ? "mute is-on" : "mute"}
+              aria-pressed={muted.has("synth")}
+              aria-label={`${muted.has("synth") ? "Unmute" : "Mute"} ${synthName}`}
+              onClick={() => onToggleMute("synth")}
+            >
+              M
+            </Button>
+          </div>
+          {Array.from({ length: HOURS }, (_, hour) => {
+            const midi = notes[hour];
+            return (
+              <button
+                key={hour}
+                type="button"
+                className={hourClass("cell note", hour, hour === step, midi != null, muted.has("synth"))}
+                aria-pressed={midi != null}
+                aria-label={`${synthName} ${formatHour(hour)}:00${midi != null ? `, ${noteName(midi)}` : ""}`}
+                onClick={() => onWriteNote(hour, midi ?? null)}
+              >
+                {midi != null ? <em>{noteName(midi)}</em> : null}
+              </button>
+            );
+          })}
           <div className="playhead" style={{ gridColumn: step + 2 }} />
         </div>
       </div>

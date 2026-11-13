@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CITIES, clonePattern, writeCell } from "../kits.ts";
+import { CITIES, DEMO_NOTES, clonePattern, emptySong, writeCell } from "../kits.ts";
 import { secondsPerStep } from "./time.ts";
 
 describe("city kits", () => {
@@ -16,6 +16,13 @@ describe("city kits", () => {
         }
       }
     }
+  });
+
+  it("starts empty and keeps a 24-hour demo", () => {
+    const blank = emptySong();
+    expect(blank.drums.every((row) => row.every((value) => value === 0))).toBe(true);
+    expect(blank.notes.every((note) => note === null)).toBe(true);
+    for (const city of CITIES) expect(DEMO_NOTES[city.id]).toHaveLength(24);
   });
 
   it("writes one hour without changing the preset", () => {

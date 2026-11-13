@@ -1,4 +1,4 @@
-import type { CityId, CityKit } from "./types.ts";
+import type { CityId, CityKit, Song, SynthSpec } from "./types.ts";
 
 const HOURS = 24;
 
@@ -94,6 +94,46 @@ export const CITIES: CityKit[] = [
     ],
   },
 ];
+
+function notes(hits: Record<number, number>): (number | null)[] {
+  const row: (number | null)[] = Array.from({ length: HOURS }, () => null);
+  for (const [hour, midi] of Object.entries(hits)) row[Number(hour)] = midi;
+  return row;
+}
+
+export const SYNTH: Record<CityId, SynthSpec> = {
+  "new-york": { name: "Bass", cutoff: 0.38, decay: 0.26, scale: [45, 48, 50, 52, 55, 57, 60, 62] },
+  amsterdam: { name: "Pluck", cutoff: 0.72, decay: 0.4, scale: [60, 62, 64, 67, 69, 72, 74, 76] },
+  tokyo: { name: "FM", cutoff: 0.8, decay: 0.22, scale: [62, 65, 67, 69, 72, 74, 77, 79] },
+  london: { name: "Organ", cutoff: 0.48, decay: 0.55, scale: [52, 55, 57, 59, 62, 64, 67, 69] },
+};
+
+export const DEMO_NOTES: Record<CityId, (number | null)[]> = {
+  "new-york": notes({ 0: 45, 4: 45, 8: 45, 10: 48, 12: 45, 14: 52, 16: 45, 18: 50, 20: 48, 22: 45 }),
+  amsterdam: notes({ 8: 60, 10: 64, 12: 67, 14: 64, 16: 60, 18: 62, 20: 57, 22: 67 }),
+  tokyo: notes({ 8: 62, 10: 65, 12: 69, 16: 62, 18: 67, 20: 69, 23: 62 }),
+  london: notes({ 8: 52, 10: 55, 12: 59, 16: 52, 18: 50, 20: 55, 22: 52 }),
+};
+
+export function emptySong(): Song {
+  return {
+    drums: Array.from({ length: 6 }, () => Array.from({ length: HOURS }, () => 0)),
+    notes: Array.from({ length: HOURS }, () => null),
+  };
+}
+
+export function emptySongs(): Record<CityId, Song> {
+  return {
+    "new-york": emptySong(),
+    amsterdam: emptySong(),
+    tokyo: emptySong(),
+    london: emptySong(),
+  };
+}
+
+export function demoSong(city: CityKit): Song {
+  return { drums: clonePattern(city.pattern), notes: (DEMO_NOTES[city.id] ?? emptySong().notes).slice() };
+}
 
 export function cityById(id: CityId): CityKit {
   const city = CITIES.find((item) => item.id === id);
