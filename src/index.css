@@ -305,31 +305,17 @@ h1 {
 }
 
 .seq-frame {
-  --gutter: 168px;
-  --gap: 2px;
-  --cell: 32px;
+  --gutter: 156px;
+  --gap: 3px;
   position: relative;
-  width: max-content;
-}
-
-.seq-frame[data-steps="96"] {
-  --cell: 12px;
+  width: max(100%, max-content);
 }
 
 .seq {
   display: grid;
-  grid-template-columns: var(--gutter) repeat(24, minmax(28px, 1fr));
+  grid-template-columns: var(--gutter) repeat(16, minmax(32px, 1fr));
   gap: var(--gap);
   width: 100%;
-}
-
-.seq-frame[data-steps="24"] {
-  width: max(100%, max-content);
-}
-
-.seq-frame[data-steps="96"] .seq {
-  width: max-content;
-  grid-template-columns: var(--gutter) repeat(96, var(--cell));
 }
 
 .corner,
@@ -350,7 +336,7 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  height: 32px;
+  height: 40px;
   padding-right: 8px;
 }
 
@@ -417,26 +403,14 @@ h1 {
   cursor: pointer;
 }
 
-.seq-frame[data-steps="96"] .ruler {
-  text-align: left;
-}
-
 .ruler.is-playhead {
   color: var(--led);
 }
 
-.now-mark {
-  position: absolute;
-  top: 6px;
-  right: 1px;
-  width: 4px;
-  height: 4px;
-  background: var(--led);
-}
-
 .cell {
   position: relative;
-  height: 32px;
+  height: 40px;
+  touch-action: manipulation;
   padding: 0;
   border: 0;
   background: var(--cell);

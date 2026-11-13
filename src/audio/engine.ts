@@ -1,12 +1,9 @@
-import type { StepHit } from "../lib/rhythm.ts";
-import { secondsPerStep } from "../lib/rhythm.ts";
-import type { DrumId } from "../types.ts";
-import { makeNoise, triggerDrum } from "./drums.ts";
+import { makeNoise, triggerVoice } from "./voices.ts";
+import { secondsPerStep } from "../lib/time.ts";
+import type { CityId, StepHit } from "../types.ts";
 
 type Transport = {
   bpm: number;
-  steps: number;
-  gate: number;
   volume: number;
 };
 
@@ -19,10 +16,9 @@ export class Engine {
   private step = 0;
   private playing = false;
   private runId = 0;
-  private bpm = 104;
-  private stepCount = 24;
-  private gate = 0.4;
+  private bpm = 96;
   private volume = 0.82;
+  private city: CityId = "new-york";
   private pattern: StepHit[][] = [];
   private queue: { index: number; when: number }[] = [];
   private onStep: (step: number) => void;
@@ -31,14 +27,14 @@ export class Engine {
     this.onStep = onStep;
   }
 
+  setCity(city: CityId): void {
+    this.city = city;
+  }
+
   setTransport(next: Transport): void {
     this.bpm = next.bpm;
-    this.stepCount = next.steps;
-    this.gate = next.gate;
     this.volume = next.volume;
-    if (this.ctx && this.master) {
-      this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.02);
-    }
+    if (this.ctx && this.master) this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.02);
   }
 
   setPattern(pattern: StepHit[][]): void {
@@ -74,11 +70,11 @@ export class Engine {
     if (this.playing && this.ctx) this.nextTime = this.ctx.currentTime + 0.04;
   }
 
-  preview(drum: DrumId, velocity = 0.9): void {
+  preview(voice: string, velocity = 0.9): void {
     const ctx = this.ensure();
     if (ctx.state === "suspended") void ctx.resume();
     if (!this.master || !this.noise) return;
-    triggerDrum(ctx, this.master, this.noise, drum, ctx.currentTime + 0.02, velocity);
+    triggerVoice(ctx, this.master, this.noise, this.city, voice, ctx.currentTime + 0.02, velocity);
   }
 
   previewStep(): void {
@@ -87,8 +83,8 @@ export class Engine {
     if (!this.master || !this.noise) return;
     const time = ctx.currentTime + 0.02;
     for (const hit of this.pattern[this.step] ?? []) {
-      if (!hit.muted && hit.velocity >= this.gate && hit.velocity > 0) {
-        triggerDrum(ctx, this.master, this.noise, hit.drum, time, hit.velocity);
+      if (!hit.muted && hit.velocity > 0) {
+        triggerVoice(ctx, this.master, this.noise, this.city, hit.voice, time, hit.velocity);
       }
     }
   }
@@ -107,11 +103,11 @@ export class Engine {
     const master = ctx.createGain();
     master.gain.value = this.volume;
     const compressor = ctx.createDynamicsCompressor();
-    compressor.threshold.value = -14;
+    compressor.threshold.value = -12;
     compressor.knee.value = 8;
-    compressor.ratio.value = 4;
-    compressor.attack.value = 0.003;
-    compressor.release.value = 0.18;
+    compressor.ratio.value = 3.5;
+    compressor.attack.value = 0.004;
+    compressor.release.value = 0.2;
     master.connect(compressor);
     compressor.connect(ctx.destination);
     this.ctx = ctx;
@@ -126,16 +122,16 @@ export class Engine {
     const horizon = ctx.currentTime + 0.16;
     while (this.nextTime < horizon) {
       const when = this.nextTime;
-      const count = this.pattern.length || this.stepCount;
+      const count = this.pattern.length || 16;
       const index = ((this.step % count) + count) % count;
       for (const hit of this.pattern[index] ?? []) {
-        if (!hit.muted && hit.velocity >= this.gate && hit.velocity > 0) {
-          triggerDrum(ctx, this.master, this.noise, hit.drum, when, hit.velocity);
+        if (!hit.muted && hit.velocity > 0) {
+          triggerVoice(ctx, this.master, this.noise, this.city, hit.voice, when, hit.velocity);
         }
       }
       this.queue.push({ index, when });
       this.step = (index + 1) % count;
-      this.nextTime = when + secondsPerStep(this.bpm, count);
+      this.nextTime = when + secondsPerStep(this.bpm);
     }
     this.flush(ctx.currentTime);
   }

@@ -1,35 +1,34 @@
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
-import { formatClock, stepClock, type ProjectedTrack } from "@/lib/rhythm";
-import type { DrumId, StepCount } from "@/types";
+import { formatStep } from "@/lib/time";
+import type { Voice } from "@/types";
 
 type Props = {
-  rows: ProjectedTrack[];
-  steps: StepCount;
-  gate: number;
+  voices: Voice[];
+  pattern: number[][];
   step: number;
-  nowHour: number | null;
   muted: ReadonlySet<string>;
   onToggleMute: (id: string) => void;
-  onPreview: (drum: DrumId) => void;
+  onPreview: (id: string) => void;
   onJump: (step: number) => void;
-  onHover: (hover: { trackId: string; step: number } | null) => void;
+  onWrite: (voice: number, step: number, velocity: number) => void;
+  onHover: (hover: { voice: number; step: number } | null) => void;
 };
 
-export function Sequencer({
-  rows,
-  steps,
-  gate,
-  step,
-  nowHour,
-  muted,
-  onToggleMute,
-  onPreview,
-  onJump,
-  onHover,
-}: Props) {
+const STEPS = 16;
+
+export function Sequencer({ voices, pattern, step, muted, onToggleMute, onPreview, onJump, onWrite, onHover }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const painting = useRef<number | null>(null);
+
+  useEffect(() => {
+    const up = () => {
+      painting.current = null;
+    };
+    window.addEventListener("pointerup", up);
+    return () => window.removeEventListener("pointerup", up);
+  }, []);
 
   useEffect(() => {
     const scroller = scrollRef.current;
@@ -38,52 +37,42 @@ export function Sequencer({
     const origin = scroller.getBoundingClientRect().left;
     const cellLeft = scroller.scrollLeft + cell.getBoundingClientRect().left - origin;
     const cellRight = cellLeft + cell.offsetWidth;
-    const viewLeft = scroller.scrollLeft;
-    const viewRight = viewLeft + scroller.clientWidth;
-    if (cellLeft >= viewLeft + 16 && cellRight <= viewRight - 16) return;
+    if (cellLeft >= scroller.scrollLeft + 16 && cellRight <= scroller.scrollLeft + scroller.clientWidth - 16) return;
     scroller.scrollLeft = cellLeft - scroller.clientWidth / 2 + cell.offsetWidth / 2;
-  }, [step, steps, rows]);
+  }, [step, pattern]);
 
   return (
     <div className="seq-scroll" ref={scrollRef}>
-      <div className="seq-frame" data-steps={steps}>
+      <div className="seq-frame">
         <div className="seq" role="group" aria-label="Step grid">
           <div className="corner" />
-          {Array.from({ length: steps }, (_, index) => {
-            const clock = stepClock(index, steps);
-            const label = clock.minute === 0 ? formatClock(clock.hour, 0).slice(0, 2) : "";
-            const isNow = nowHour === clock.hour && clock.minute === 0;
-            return (
-              <button
-                key={index}
-                type="button"
-                className={index === step ? "ruler is-playhead" : "ruler"}
-                aria-current={index === step ? "step" : undefined}
-                aria-label={
-                  isNow
-                    ? `Go to ${formatClock(clock.hour, clock.minute)}, current hour`
-                    : `Go to ${formatClock(clock.hour, clock.minute)}`
-                }
-                onClick={() => onJump(index)}
-              >
-                {isNow ? <i className="now-mark" /> : null}
-                {label ? <span>{label}</span> : null}
-              </button>
-            );
-          })}
-          {rows.map((row) => {
-            const isMuted = muted.has(row.track.id);
+          {Array.from({ length: STEPS }, (_, index) => (
+            <button
+              key={index}
+              type="button"
+              className={index === step ? "ruler is-playhead" : "ruler"}
+              aria-current={index === step ? "step" : undefined}
+              aria-label={`Go to step ${formatStep(index)}`}
+              onClick={() => onJump(index)}
+            >
+              {formatStep(index)}
+            </button>
+          ))}
+          {voices.map((voice, voiceIndex) => {
+            const isMuted = muted.has(voice.id);
+            const row = pattern[voiceIndex] ?? [];
             return (
               <TrackRow
-                key={row.track.id}
+                key={voice.id}
+                voice={voice}
+                voiceIndex={voiceIndex}
                 row={row}
-                steps={steps}
-                gate={gate}
                 step={step}
                 muted={isMuted}
+                painting={painting}
                 onToggleMute={onToggleMute}
                 onPreview={onPreview}
-                onJump={onJump}
+                onWrite={onWrite}
                 onHover={onHover}
               />
             );
@@ -95,32 +84,34 @@ export function Sequencer({
 }
 
 function TrackRow({
+  voice,
+  voiceIndex,
   row,
-  steps,
-  gate,
   step,
   muted,
+  painting,
   onToggleMute,
   onPreview,
-  onJump,
+  onWrite,
   onHover,
 }: {
-  row: ProjectedTrack;
-  steps: StepCount;
-  gate: number;
+  voice: Voice;
+  voiceIndex: number;
+  row: number[];
   step: number;
   muted: boolean;
+  painting: { current: number | null };
   onToggleMute: (id: string) => void;
-  onPreview: (drum: DrumId) => void;
-  onJump: (step: number) => void;
-  onHover: (hover: { trackId: string; step: number } | null) => void;
+  onPreview: (id: string) => void;
+  onWrite: (voice: number, step: number, velocity: number) => void;
+  onHover: (hover: { voice: number; step: number } | null) => void;
 }) {
   return (
     <>
       <div className={muted ? "gutter is-muted" : "gutter"}>
-        <button type="button" className="track-name" onClick={() => onPreview(row.track.drum)}>
-          <span>{row.track.name}</span>
-          <span className="drum">{row.track.drum}</span>
+        <button type="button" className="track-name" onClick={() => onPreview(voice.id)}>
+          <span>{voice.name}</span>
+          <span className="drum">{voice.hint}</span>
         </button>
         <Button
           type="button"
@@ -128,28 +119,40 @@ function TrackRow({
           variant="outline"
           className={muted ? "mute is-on" : "mute"}
           aria-pressed={muted}
-          aria-label={`${muted ? "Unmute" : "Mute"} ${row.track.name}`}
-          onClick={() => onToggleMute(row.track.id)}
+          aria-label={`${muted ? "Unmute" : "Mute"} ${voice.name}`}
+          onClick={() => onToggleMute(voice.id)}
         >
           M
         </Button>
       </div>
-      {row.values.map((velocity, index) => {
-        const plays = !muted && velocity >= gate && velocity > 0;
-        const clock = stepClock(index, steps);
-        const time = formatClock(clock.hour, clock.minute);
-        const detail = row.details[index] ?? "";
+      {Array.from({ length: STEPS }, (_, index) => {
+        const velocity = row[index] ?? 0;
+        const on = velocity > 0;
         return (
           <button
             key={index}
             type="button"
-            className={cellClass(index === step, plays, muted)}
+            className={cellClass(index === step, on, muted)}
             style={{ "--v": String(velocity) } as CSSProperties}
-            aria-label={`${row.track.name} ${time}. ${detail}. ${plays ? "Plays" : "Rest"}.`}
-            onClick={() => onJump(index)}
-            onMouseEnter={() => onHover({ trackId: row.track.id, step: index })}
-            onMouseLeave={() => onHover(null)}
-            onFocus={() => onHover({ trackId: row.track.id, step: index })}
+            aria-pressed={velocity > 0}
+            aria-label={`${voice.name} step ${formatStep(index)}. ${velocity > 0 ? "On" : "Off"}.`}
+            onPointerDown={(event) => {
+              if (event.pointerType === "touch") {
+                onWrite(voiceIndex, index, velocity > 0 ? 0 : 0.9);
+                return;
+              }
+              event.preventDefault();
+              const next = velocity > 0 ? 0 : 0.9;
+              painting.current = next;
+              onWrite(voiceIndex, index, next);
+            }}
+            onPointerEnter={(event) => {
+              onHover({ voice: voiceIndex, step: index });
+              if (painting.current === null || event.buttons === 0) return;
+              onWrite(voiceIndex, index, painting.current);
+            }}
+            onPointerLeave={() => onHover(null)}
+            onFocus={() => onHover({ voice: voiceIndex, step: index })}
             onBlur={() => onHover(null)}
           >
             <span className="cell-fill" />
@@ -160,10 +163,10 @@ function TrackRow({
   );
 }
 
-function cellClass(playhead: boolean, plays: boolean, muted: boolean): string {
+function cellClass(playhead: boolean, on: boolean, muted: boolean): string {
   const names = ["cell"];
   if (playhead) names.push("is-playhead");
-  if (plays) names.push("is-on");
+  if (on) names.push("is-on");
   if (muted) names.push("is-muted");
   return names.join(" ");
 }

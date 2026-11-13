@@ -1,34 +1,23 @@
-export type DatasetId = "nyc-subway" | "usgs-quakes" | "world-no2";
+export type CityId = "new-york" | "amsterdam" | "tokyo" | "london";
 
-export type DrumId = "kick" | "snare" | "hat" | "tom" | "clap" | "rim";
-
-export type Track = {
+export type Voice = {
   id: string;
   name: string;
-  drum: DrumId;
-  /** 24 raw hourly values, before per-track scaling. */
-  hours: number[];
-  /** Same length as hours. Shown in the readout. */
-  details: string[];
-  /** IANA zone, when the track is a city on a UTC grid. */
-  timeZone?: string;
+  hint: string;
 };
 
-export type DayData = {
-  id: DatasetId;
-  /** YYYY-MM-DD in the dataset clock, or null for a rolling window. */
-  day: string | null;
-  timezone: string;
-  rolling: boolean;
-  /** Wall-clock hour 0–23 in the dataset clock, if the slice contains now. */
-  nowHour: number | null;
-  fetchedAt: string;
-  tracks: Track[];
+export type CityKit = {
+  id: CityId;
+  label: string;
+  bpm: number;
+  note: string;
+  voices: Voice[];
+  /** velocity per voice per step. 16 steps, one bar of sixteenth notes. */
+  pattern: number[][];
 };
 
-export type LoadedDay = DayData & {
-  origin: "live" | "snapshot";
-  liveError?: string;
+export type StepHit = {
+  voice: string;
+  velocity: number;
+  muted: boolean;
 };
-
-export type StepCount = 24 | 96;
