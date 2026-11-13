@@ -8,7 +8,7 @@ All 24 files are mono, 44.1 kHz, Vorbis (`.ogg`), peak-normalised to about −1 
 
 **Attribution.** CC0 does not require credit; authors are listed anyway. Three tracks are not CC0 and **must** be credited in the app:
 
-- `tokyo/train.ogg` — CC BY-SA 4.0, JIRCTRAINZ? (as credited on Wikimedia Commons). Adaptations, including this trim/conversion, must be shared under CC BY-SA 4.0.
+- `tokyo/train.ogg` — CC BY-SA 4.0, Wikimedia Commons. The file page’s artist field is unclear. Adaptations, including this trim/conversion, must be shared under CC BY-SA 4.0.
 - `tokyo/gate.ogg` — CC BY 4.0, Hinoki.owo.
 - `tokyo/bowl.ogg` — CC BY-SA 4.0, Wikimedia user דג בלי מלח. Adaptations must be shared under CC BY-SA 4.0.
 
@@ -44,7 +44,7 @@ All 24 files are mono, 44.1 kHz, Vorbis (`.ogg`), peak-normalised to about −1 
 
 | Track | What it is | Source | Licence | Attribution | Notes |
 |---|---|---|---|---|---|
-| `train` | Tokyo Metro 6000 series train horn, one blast | [File:TM6000_horn.wav](https://commons.wikimedia.org/wiki/File:TM6000_horn.wav) | CC BY-SA 4.0 | JIRCTRAINZ? (as credited on Wikimedia Commons) | Real Tokyo Metro horn. Credit required; share-alike applies. Station departure melodies were avoided because of composition copyright. |
+| `train` | Tokyo Metro 6000 series train horn, one blast | [File:TM6000_horn.wav](https://commons.wikimedia.org/wiki/File:TM6000_horn.wav) | CC BY-SA 4.0 | Wikimedia Commons (artist field on the file page is unclear) | Real Tokyo Metro horn. Credit required; share-alike applies. Station departure melodies were avoided because of composition copyright. |
 | `crossing` | Japanese railway level-crossing electronic bell (*kan-kan* / boom-gate beeping), short loop | [JotrainG 650317](https://freesound.org/people/JotrainG/sounds/650317/) *Japanese Railway Level Crossing Electronic Beeping Loop* | CC0 1.0 | JotrainG | Strong object match, recorded in Japan. Slightly longer than 1.5 s so two or three beeps can land as a phrase. |
 | `gate` | Suica IC-card beep at a JR ticket gate, Tokyo station | [Hinoki.owo 796687](https://freesound.org/people/Hinoki.owo/sounds/796687/) *Card Beep in Japan Railways Ticket Gate* | CC BY 4.0 | Hinoki.owo | Strong match. Credit required. Tight cut of the beep only. |
 | `rail` | Onboard rail-joint wheel clacks (a short double clack) | [kyles 637908](https://freesound.org/people/kyles/sounds/637908/) *train passenger India onboard rail clacks between cars maybe* | CC0 1.0 | kyles | **Weak place match:** the right kind of rail-joint clack, but recorded on a passenger train in India, not Tokyo. |

@@ -379,7 +379,7 @@ export default function App() {
           </div>
         ) : null}
         <p className="credits">
-          Credits: mostly CC0. Tokyo Metro horn by JIRCTRAINZ?,{" "}
+          Credits: mostly CC0. Tokyo Metro horn,{" "}
           <a href="https://commons.wikimedia.org/wiki/File:TM6000_horn.wav">Wikimedia Commons</a>, CC BY-SA 4.0. Suica beep
           by <a href="https://freesound.org/people/Hinoki.owo/sounds/796687/">Hinoki.owo</a>, CC BY 4.0. Singing bowl by{" "}
           <a href="https://commons.wikimedia.org/wiki/User:%D7%93%D7%92_%D7%91%D7%9C%D7%99_%D7%9E%D7%9C%D7%97">דג בלי מלח</a>,{" "}

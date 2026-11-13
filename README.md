@@ -51,6 +51,6 @@ Most files are CC0. Attribution is not required for those; the authors are still
 
 Three files require attribution:
 
-- Tokyo train: “[TM6000_horn.wav](https://commons.wikimedia.org/wiki/File:TM6000_horn.wav)” by JIRCTRAINZ?, Wikimedia Commons, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This copy was trimmed and converted to mono Ogg Vorbis. That adaptation is also shared under CC BY-SA 4.0.
+- Tokyo train: “[TM6000_horn.wav](https://commons.wikimedia.org/wiki/File:TM6000_horn.wav)”, Wikimedia Commons, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The file page’s artist field is unclear, so this credits Wikimedia Commons. This copy was trimmed and converted to mono Ogg Vorbis. That adaptation is also shared under CC BY-SA 4.0.
 - Tokyo gate: “Card Beep in Japan Railways Ticket Gate” by [Hinoki.owo](https://freesound.org/people/Hinoki.owo/sounds/796687/), Freesound, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - Tokyo bowl: “[Tibetan Singing Bowl hit 4.5inch.flac](https://commons.wikimedia.org/wiki/File:Tibetan_Singing_Bowl_hit_4.5inch.flac)” by [דג בלי מלח](https://commons.wikimedia.org/wiki/User:%D7%93%D7%92_%D7%91%D7%9C%D7%99_%D7%9E%D7%9C%D7%97), Wikimedia Commons, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This copy was trimmed and converted to mono Ogg Vorbis. That adaptation is also shared under CC BY-SA 4.0.
