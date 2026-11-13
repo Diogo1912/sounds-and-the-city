@@ -18,110 +18,173 @@ export function triggerVoice(
   velocity: number,
 ): void {
   const level = Math.max(0, Math.min(1, velocity));
-  const key = `${city}:${voice}`;
-  switch (key) {
+  switch (`${city}:${voice}`) {
     case "new-york:subway":
-      tone(ctx, dest, "sine", 128, 42, time, 0.85 * level, 0.004, 0.2);
-      noiseBurst(ctx, dest, noise, time, 0.18 * level, 0.001, 0.03, { type: "highpass", freq: 1800 });
-      tone(ctx, dest, "sine", 90, 48, time + 0.04, 0.35 * level, 0.002, 0.12);
+      subway(ctx, dest, noise, time, level);
       break;
     case "new-york:horn":
-      blat(ctx, dest, noise, time, [349, 466], 0.16, 0.28 * level);
+      horn(ctx, dest, noise, time, [392, 466], 0.2, 0.32 * level);
       break;
     case "new-york:turnstile":
-      metal(ctx, dest, noise, time, 3200, 0.02, 0.22 * level);
-      metal(ctx, dest, noise, time + 0.012, 2400, 0.016, 0.12 * level);
+      turnstile(ctx, dest, noise, time, level);
       break;
     case "new-york:steam":
-      noiseBurst(ctx, dest, noise, time, 0.16 * level, 0.01, 0.22, { type: "bandpass", freq: 1600, q: 0.8 });
+      radiator(ctx, dest, noise, time, level);
       break;
     case "new-york:chime":
-      tone(ctx, dest, "sine", 784, 784, time, 0.22 * level, 0.003, 0.28);
-      tone(ctx, dest, "sine", 1046, 1046, time + 0.08, 0.16 * level, 0.003, 0.32);
+      bell(ctx, dest, noise, time, 988, 0.45, 0.28 * level);
+      bell(ctx, dest, noise, time + 0.11, 740, 0.55, 0.22 * level);
       break;
     case "new-york:hammer":
-      for (let hit = 0; hit < 6; hit += 1) {
-        noiseBurst(ctx, dest, noise, time + hit * 0.028, 0.2 * level, 0.001, 0.02, { type: "highpass", freq: 900 });
-      }
+      jackhammer(ctx, dest, noise, time, level);
       break;
     case "amsterdam:tram":
-      fmBell(ctx, dest, time, 294, 1.5, 0.85, 0.45 * level);
+      bell(ctx, dest, noise, time, 720, 0.9, 0.4 * level);
       break;
     case "amsterdam:bell":
-      fmBell(ctx, dest, time, 2093, 2.7, 0.28, 0.28 * level);
+      bikeBell(ctx, dest, noise, time, level);
       break;
     case "amsterdam:cobbles":
-      tone(ctx, dest, "sine", 170, 90, time, 0.2 * level, 0.002, 0.05);
-      noiseBurst(ctx, dest, noise, time, 0.14 * level, 0.001, 0.03, { type: "bandpass", freq: 900, q: 1.2 });
+      cobbles(ctx, dest, noise, time, level);
       break;
     case "amsterdam:canal":
-      tone(ctx, dest, "sine", 220, 70, time, 0.18 * level, 0.004, 0.16);
-      noiseBurst(ctx, dest, noise, time, 0.12 * level, 0.008, 0.18, { type: "lowpass", freq: 700 });
+      canal(ctx, dest, noise, time, level);
       break;
     case "amsterdam:carillon":
-      fmBell(ctx, dest, time, 740, 2.2, 1.15, 0.32 * level);
-      tone(ctx, dest, "sine", 1480, 1480, time, 0.06 * level, 0.002, 0.4);
+      bell(ctx, dest, noise, time, 523, 1.5, 0.42 * level);
       break;
     case "amsterdam:bridge":
-      blat(ctx, dest, noise, time, [155], 0.32, 0.22 * level);
+      horn(ctx, dest, noise, time, [196], 0.22, 0.26 * level);
+      horn(ctx, dest, noise, time + 0.26, [196], 0.22, 0.22 * level);
       break;
     case "tokyo:train":
-      tone(ctx, dest, "sine", 78, 40, time, 0.7 * level, 0.004, 0.18);
-      noiseBurst(ctx, dest, noise, time, 0.14 * level, 0.02, 0.16, { type: "lowpass", freq: 500 });
+      train(ctx, dest, noise, time, level);
       break;
     case "tokyo:crossing":
-      beep(ctx, dest, time, 2093, 0.06, 0.16 * level);
-      beep(ctx, dest, time + 0.08, 2489, 0.06, 0.16 * level);
+      speakerBeep(ctx, dest, time, 2093, 0.055, 0.16 * level);
+      speakerBeep(ctx, dest, time + 0.09, 2489, 0.055, 0.16 * level);
       break;
     case "tokyo:gate":
-      beep(ctx, dest, time, 1046, 0.045, 0.18 * level);
+      speakerBeep(ctx, dest, time, 1318, 0.04, 0.14 * level);
+      metal(ctx, dest, noise, time + 0.05, 1800, 0.015, 0.12 * level);
+      metal(ctx, dest, noise, time + 0.07, 900, 0.02, 0.08 * level);
       break;
     case "tokyo:rail":
-      metal(ctx, dest, noise, time, 1800, 0.02, 0.16 * level);
-      metal(ctx, dest, noise, time + 0.08, 1400, 0.02, 0.12 * level);
+      metal(ctx, dest, noise, time, 2400, 0.018, 0.2 * level);
+      metal(ctx, dest, noise, time + 0.07, 1600, 0.018, 0.14 * level);
       break;
     case "tokyo:door":
-      tone(ctx, dest, "sine", 880, 880, time, 0.12 * level, 0.004, 0.16);
-      tone(ctx, dest, "sine", 1175, 1175, time + 0.09, 0.1 * level, 0.004, 0.2);
+      speakerBeep(ctx, dest, time, 880, 0.08, 0.1 * level);
+      speakerBeep(ctx, dest, time + 0.1, 659, 0.1, 0.09 * level);
       break;
     case "tokyo:bowl":
-      tone(ctx, dest, "sine", 440, 440, time, 0.16 * level, 0.01, 1.3);
-      tone(ctx, dest, "sine", 443, 443, time, 0.12 * level, 0.01, 1.3);
-      tone(ctx, dest, "sine", 880, 880, time, 0.04 * level, 0.005, 0.6);
+      bowl(ctx, dest, noise, time, level);
       break;
     case "london:bell":
-      fmBell(ctx, dest, time, 196, 1.42, 1.35, 0.5 * level);
-      tone(ctx, dest, "sine", 392, 392, time, 0.08 * level, 0.004, 0.8);
+      bell(ctx, dest, noise, time, 196, 1.8, 0.55 * level);
       break;
     case "london:tube":
-      beep(ctx, dest, time, 1568, 0.05, 0.14 * level);
-      beep(ctx, dest, time + 0.09, 1568, 0.05, 0.12 * level);
+      alarm(ctx, dest, time, 1850, 0.07, 0.14 * level);
+      alarm(ctx, dest, time + 0.1, 1850, 0.07, 0.12 * level);
       break;
     case "london:cab":
-      blat(ctx, dest, noise, time, [311], 0.14, 0.24 * level);
+      horn(ctx, dest, noise, time, [370], 0.16, 0.22 * level);
       break;
     case "london:bus":
-      tone(ctx, dest, "sine", 1318, 1318, time, 0.2 * level, 0.002, 0.22);
-      tone(ctx, dest, "sine", 2637, 2637, time, 0.06 * level, 0.002, 0.12);
+      ding(ctx, dest, noise, time, level);
+      ding(ctx, dest, noise, time + 0.12, level * 0.85);
       break;
     case "london:rain":
-      noiseBurst(ctx, dest, noise, time, 0.1 * level, 0.001, 0.04, { type: "highpass", freq: 5000 });
-      noiseBurst(ctx, dest, noise, time + 0.03, 0.06 * level, 0.001, 0.03, { type: "highpass", freq: 7000 });
+      drop(ctx, dest, noise, time, level);
+      drop(ctx, dest, noise, time + 0.045, level * 0.7);
+      drop(ctx, dest, noise, time + 0.1, level * 0.5);
       break;
     case "london:diesel":
-      tone(ctx, dest, "sine", 58, 46, time, 0.45 * level, 0.008, 0.24);
-      noiseBurst(ctx, dest, noise, time, 0.1 * level, 0.01, 0.2, { type: "lowpass", freq: 240 });
+      diesel(ctx, dest, noise, time, level);
       break;
     default:
       break;
   }
 }
 
-function beep(ctx: AudioContext, dest: AudioNode, time: number, freq: number, decay: number, peak: number): void {
-  tone(ctx, dest, "sine", freq, freq, time, peak, 0.002, decay);
+function subway(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  tone(ctx, dest, "sine", 72, 40, time, 0.55 * level, 0.01, 0.28);
+  noiseBurst(ctx, dest, buffer, time, 0.12 * level, 0.02, 0.22, { type: "lowpass", freq: 280 });
+  metal(ctx, dest, buffer, time, 1400, 0.02, 0.22 * level);
+  metal(ctx, dest, buffer, time + 0.045, 900, 0.025, 0.16 * level);
 }
 
-function blat(
+function turnstile(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  for (let hit = 0; hit < 4; hit += 1) {
+    metal(ctx, dest, buffer, time + hit * 0.016, 3600 - hit * 400, 0.012, (0.16 - hit * 0.02) * level);
+  }
+  tone(ctx, dest, "triangle", 280, 140, time + 0.07, 0.18 * level, 0.001, 0.04);
+}
+
+function radiator(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  noiseBurst(ctx, dest, buffer, time, 0.14 * level, 0.02, 0.16, { type: "bandpass", freq: 2400, q: 0.7 });
+  bell(ctx, dest, buffer, time + 0.08, 680, 0.22, 0.16 * level);
+  bell(ctx, dest, buffer, time + 0.2, 540, 0.18, 0.1 * level);
+}
+
+function jackhammer(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  for (let hit = 0; hit < 9; hit += 1) {
+    noiseBurst(ctx, dest, buffer, time + hit * 0.026, 0.22 * level, 0.001, 0.016, { type: "highpass", freq: 700 });
+    tone(ctx, dest, "sine", 90, 50, time + hit * 0.026, 0.2 * level, 0.001, 0.02);
+  }
+}
+
+function bikeBell(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  bell(ctx, dest, buffer, time, 2480, 0.16, 0.22 * level);
+  bell(ctx, dest, buffer, time + 0.09, 2630, 0.18, 0.2 * level);
+}
+
+function cobbles(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  const gaps = [0, 0.028, 0.05, 0.084, 0.11];
+  gaps.forEach((gap, index) => {
+    tone(ctx, dest, "sine", 150 - index * 8, 80, time + gap, 0.16 * level, 0.001, 0.04);
+    noiseBurst(ctx, dest, buffer, time + gap, 0.06 * level, 0.001, 0.02, { type: "bandpass", freq: 700, q: 1 });
+  });
+}
+
+function canal(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  tone(ctx, dest, "sine", 340, 70, time, 0.22 * level, 0.004, 0.18);
+  noiseBurst(ctx, dest, buffer, time + 0.02, 0.16 * level, 0.01, 0.22, { type: "lowpass", freq: 600 });
+}
+
+function train(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  tone(ctx, dest, "sawtooth", 160, 480, time, 0.08 * level, 0.02, 0.28);
+  tone(ctx, dest, "sine", 70, 48, time, 0.4 * level, 0.01, 0.24);
+  noiseBurst(ctx, dest, buffer, time + 0.18, 0.08 * level, 0.01, 0.12, { type: "highpass", freq: 3000 });
+}
+
+function bowl(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  noiseBurst(ctx, dest, buffer, time, 0.08 * level, 0.001, 0.02, { type: "bandpass", freq: 1200, q: 2 });
+  tone(ctx, dest, "sine", 294, 294, time, 0.16 * level, 0.008, 1.6);
+  tone(ctx, dest, "sine", 296.4, 296.4, time, 0.12 * level, 0.008, 1.6);
+  tone(ctx, dest, "sine", 588, 588, time, 0.04 * level, 0.004, 0.7);
+}
+
+function ding(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  tone(ctx, dest, "sine", 1568, 1568, time, 0.2 * level, 0.001, 0.14);
+  tone(ctx, dest, "sine", 3136, 3136, time, 0.06 * level, 0.001, 0.08);
+  noiseBurst(ctx, dest, buffer, time, 0.05 * level, 0.001, 0.012, { type: "highpass", freq: 4000 });
+}
+
+function diesel(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  for (let chug = 0; chug < 4; chug += 1) {
+    const at = time + chug * 0.07;
+    tone(ctx, dest, "sine", 62, 42, at, 0.35 * level, 0.004, 0.05);
+    noiseBurst(ctx, dest, buffer, at, 0.08 * level, 0.002, 0.04, { type: "lowpass", freq: 300 });
+  }
+}
+
+function drop(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, level: number): void {
+  tone(ctx, dest, "sine", 1400, 380, time, 0.08 * level, 0.001, 0.05);
+  noiseBurst(ctx, dest, buffer, time, 0.04 * level, 0.001, 0.03, { type: "highpass", freq: 2000 });
+}
+
+function horn(
   ctx: AudioContext,
   dest: AudioNode,
   buffer: AudioBuffer,
@@ -132,54 +195,64 @@ function blat(
 ): void {
   const filter = ctx.createBiquadFilter();
   filter.type = "bandpass";
-  filter.frequency.setValueAtTime(900, time);
-  filter.Q.setValueAtTime(3, time);
-  const gain = envelope(ctx, time, peak, 0.006, decay);
+  filter.frequency.setValueAtTime(1100, time);
+  filter.Q.setValueAtTime(4.5, time);
+  const gain = envelope(ctx, time, peak, 0.008, decay);
   filter.connect(gain);
   gain.connect(dest);
   for (const freq of freqs) {
     const osc = ctx.createOscillator();
     osc.type = "square";
     osc.frequency.setValueAtTime(freq, time);
-    osc.frequency.exponentialRampToValueAtTime(freq * 0.92, time + decay);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(40, freq * 0.94), time + decay);
     osc.connect(filter);
     osc.start(time);
     osc.stop(time + decay + 0.03);
   }
-  const spit = ctx.createBufferSource();
-  spit.buffer = buffer;
-  const spitGain = envelope(ctx, time, peak * 0.25, 0.001, 0.03);
-  spit.connect(spitGain);
-  spitGain.connect(dest);
-  spit.start(time, Math.random());
-  spit.stop(time + 0.04);
+  noiseBurst(ctx, dest, buffer, time, peak * 0.35, 0.001, 0.02, { type: "highpass", freq: 1500 });
 }
 
-function fmBell(
+function speakerBeep(ctx: AudioContext, dest: AudioNode, time: number, freq: number, decay: number, peak: number): void {
+  tone(ctx, dest, "sine", freq, freq, time, peak, 0.001, decay);
+  tone(ctx, dest, "square", freq, freq, time, peak * 0.08, 0.001, decay * 0.6);
+}
+
+function alarm(ctx: AudioContext, dest: AudioNode, time: number, freq: number, decay: number, peak: number): void {
+  const filter = ctx.createBiquadFilter();
+  filter.type = "highpass";
+  filter.frequency.setValueAtTime(900, time);
+  const gain = envelope(ctx, time, peak, 0.001, decay);
+  filter.connect(gain);
+  gain.connect(dest);
+  const osc = ctx.createOscillator();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(freq, time);
+  osc.connect(filter);
+  osc.start(time);
+  osc.stop(time + decay + 0.02);
+}
+
+function bell(
   ctx: AudioContext,
   dest: AudioNode,
+  buffer: AudioBuffer,
   time: number,
-  carrier: number,
-  ratio: number,
+  prime: number,
   decay: number,
   peak: number,
 ): void {
-  const modulator = ctx.createOscillator();
-  const amount = ctx.createGain();
-  const voice = ctx.createOscillator();
-  const amp = envelope(ctx, time, peak, 0.002, decay);
-  modulator.frequency.setValueAtTime(carrier * ratio, time);
-  amount.gain.setValueAtTime(carrier * 3.2, time);
-  amount.gain.exponentialRampToValueAtTime(1, time + decay);
-  modulator.connect(amount);
-  amount.connect(voice.frequency);
-  voice.frequency.setValueAtTime(carrier, time);
-  voice.connect(amp);
-  amp.connect(dest);
-  modulator.start(time);
-  voice.start(time);
-  modulator.stop(time + decay + 0.05);
-  voice.stop(time + decay + 0.05);
+  const partials: [number, number, number][] = [
+    [0.5, 0.35, 1.35],
+    [1, 0.5, 1],
+    [1.19, 0.32, 0.9],
+    [1.5, 0.16, 0.7],
+    [2, 0.22, 0.5],
+    [2.55, 0.08, 0.35],
+  ];
+  for (const [ratio, amp, decayScale] of partials) {
+    tone(ctx, dest, "sine", prime * ratio, prime * ratio, time, peak * amp, 0.002, decay * decayScale);
+  }
+  noiseBurst(ctx, dest, buffer, time, peak * 0.25, 0.001, 0.012, { type: "highpass", freq: 2000 });
 }
 
 function metal(
@@ -191,8 +264,7 @@ function metal(
   decay: number,
   peak: number,
 ): void {
-  noiseBurst(ctx, dest, buffer, time, peak, 0.001, decay, { type: "bandpass", freq, q: 6 });
-  tone(ctx, dest, "square", freq, freq * 0.5, time, peak * 0.15, 0.001, decay);
+  noiseBurst(ctx, dest, buffer, time, peak, 0.001, decay, { type: "bandpass", freq, q: 8 });
 }
 
 function tone(
@@ -206,15 +278,18 @@ function tone(
   attack: number,
   decay: number,
 ): void {
+  if (peak <= 0.0005) return;
   const osc = ctx.createOscillator();
   osc.type = type;
   osc.frequency.setValueAtTime(Math.max(1, freq), time);
-  if (freqEnd !== freq) osc.frequency.exponentialRampToValueAtTime(Math.max(1, freqEnd), time + decay);
+  if (Math.abs(freqEnd - freq) > 0.5) {
+    osc.frequency.exponentialRampToValueAtTime(Math.max(1, freqEnd), time + Math.max(0.01, decay));
+  }
   const gain = envelope(ctx, time, peak, attack, decay);
   osc.connect(gain);
   gain.connect(dest);
   osc.start(time);
-  osc.stop(time + attack + decay + 0.03);
+  osc.stop(time + attack + decay + 0.04);
 }
 
 function noiseBurst(
@@ -227,6 +302,7 @@ function noiseBurst(
   decay: number,
   filter: { type: BiquadFilterType; freq: number; q?: number },
 ): void {
+  if (peak <= 0.0005) return;
   const source = ctx.createBufferSource();
   source.buffer = buffer;
   const biquad = ctx.createBiquadFilter();
@@ -244,8 +320,9 @@ function noiseBurst(
 
 function envelope(ctx: AudioContext, time: number, peak: number, attack: number, decay: number): GainNode {
   const gain = ctx.createGain();
+  const safePeak = Math.max(0.001, peak);
   gain.gain.setValueAtTime(0.0001, time);
-  gain.gain.exponentialRampToValueAtTime(Math.max(0.001, peak), time + Math.max(0.001, attack));
-  gain.gain.exponentialRampToValueAtTime(0.0001, time + attack + decay);
+  gain.gain.exponentialRampToValueAtTime(safePeak, time + Math.max(0.001, attack));
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + attack + Math.max(0.01, decay));
   return gain;
 }

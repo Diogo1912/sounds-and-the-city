@@ -1,8 +1,8 @@
 # City Rhythm
 
-A drum machine with four city kits. Each place is a set of synthesized sounds you would hear there, laid out on a 16-step bar.
+A drum machine with four city kits. Each step is an hour, so a pattern is one day in that city.
 
-![New York kit](docs/screenshots/new-york.png)
+![New York, through the day](docs/screenshots/new-york.png)
 
 ## Run
 
@@ -20,14 +20,13 @@ npm run build
 
 ## Play
 
-Pick **New York**, **Amsterdam**, **Tokyo**, or **London**. Each city loads its own sounds, a starter pattern, and a tempo.
+Pick **New York**, **Amsterdam**, **Tokyo**, or **London**. Each city loads its sounds, a starter day, and a tempo.
 
-- **Play** runs the bar. Space does the same.
-- **Tempo** is the quarter-note BPM. One step is a sixteenth note, so a bar lasts `4 × 60 / BPM` seconds.
-- Click a pad to turn it on or off. Drag across pads to paint. On a touch screen, tap a pad.
-- Click a name to hear that sound alone. **M** mutes the row.
-- The numbers above the grid move the playhead. Left and right arrows do the same.
-- **Reset** restores that city's starter pattern.
+- **Play** runs the 24 hours. Space does the same. The clock is the current hour.
+- **Tempo** is the quarter-note BPM. One hour is one beat, so a day lasts `24 × 60 / BPM` seconds.
+- Click a pad to turn that hour on or off. Drag to paint. On a touch screen, tap.
+- Click a name to hear that sound. **M** mutes the row.
+- **Reset** restores that city's day.
 
 Patterns are kept in the browser while you switch cities.
 
@@ -37,9 +36,9 @@ All sounds are synthesized in the Web Audio API. No samples, no recordings.
 
 | City | Sounds | Starter tempo |
 | --- | --- | --- |
-| New York | Subway joint, taxi horn, turnstile, radiator steam, door chime, jackhammer | 96 |
-| Amsterdam | Tram gong, bike bell, cobbles, canal slap, carillon, bridge horn | 112 |
-| Tokyo | Train, crossing signal, ticket gate, rail clack, door chime, temple bowl | 120 |
-| London | Clock bell, tube doors, cab horn, bus bell, rain, diesel | 92 |
+| New York | Subway, taxi horn, turnstile, radiator, door chime, jackhammer | 96 |
+| Amsterdam | Tram bell, bike bell, cobbles, canal, carillon, bridge horn | 108 |
+| Tokyo | Train motor, crossing, ticket gate, rail, door, temple bowl | 118 |
+| London | Clock bell, tube alarm, cab horn, bus bell, rain, diesel | 92 |
 
 The Tokyo crossing is two short beeps, in the manner of a pedestrian signal, not a station melody. The London and Amsterdam bells are single strikes, not clock tunes.

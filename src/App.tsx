@@ -5,10 +5,8 @@ import { Sequencer } from "@/components/Sequencer";
 import { Engine } from "@/audio/engine";
 import { CITIES, cityById, clonePattern, writeCell } from "@/kits";
 import { loadPatterns, loadSettings, savePatterns, saveSettings } from "@/lib/settings";
-import { barSeconds, formatStep } from "@/lib/time";
+import { formatHour } from "@/lib/time";
 import type { CityId, StepHit } from "@/types";
-
-type Hover = { voice: number; step: number } | null;
 
 export default function App() {
   const stored = useState(loadSettings)[0];
@@ -19,7 +17,6 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [step, setStep] = useState(0);
   const [muted, setMuted] = useState<ReadonlySet<string>>(() => new Set());
-  const [hover, setHover] = useState<Hover>(null);
   const engineRef = useRef<Engine | null>(null);
   const playingRef = useRef(false);
   const stepRef = useRef(0);
@@ -93,7 +90,7 @@ export default function App() {
       }
     }
     function nudge(delta: number) {
-      const next = (stepRef.current + delta + 16) % 16;
+      const next = (stepRef.current + delta + 24) % 24;
       const engine = engineRef.current;
       engine?.jump(next);
       setStep(next);
@@ -121,7 +118,6 @@ export default function App() {
     setCityId(id);
     setBpm(next.bpm);
     setMuted(new Set());
-    setHover(null);
     setStep(0);
     engineRef.current?.jump(0);
   }
@@ -150,17 +146,44 @@ export default function App() {
     });
   }
 
-  const sounding = soundingNames(city.voices, pattern, step, muted);
-  const hoverText = describeHover(city.voices, pattern, hover);
-
   return (
     <div className="app">
       <div className="face">
-        <header className="head">
-          <div>
-            <h1>City Rhythm</h1>
-            <p className="sub">Four city kits</p>
-          </div>
+        <header className="transport">
+          <h1>City Rhythm</h1>
+          <Button
+            type="button"
+            className={playing ? "play is-on" : "play"}
+            aria-pressed={playing}
+            aria-label={playing ? "Pause" : "Play"}
+            onClick={togglePlay}
+          >
+            {playing ? <PauseMark /> : <PlayMark />}
+          </Button>
+          <p className="lcd">
+            {formatHour(step)}
+            <span>:00</span>
+          </p>
+          <label className="bpm">
+            <span>{bpm}</span>
+            <Slider
+              min={60}
+              max={180}
+              step={1}
+              value={[bpm]}
+              aria-label="Tempo"
+              onValueChange={(value) => setBpm(value[0] ?? bpm)}
+            />
+          </label>
+          <Slider
+            className="vol"
+            min={0}
+            max={100}
+            step={1}
+            value={[Math.round(volume * 100)]}
+            aria-label="Level"
+            onValueChange={(value) => setVolume((value[0] ?? 82) / 100)}
+          />
           <div className="seg" role="group" aria-label="City">
             {CITIES.map((item) => (
               <Button
@@ -175,65 +198,10 @@ export default function App() {
               </Button>
             ))}
           </div>
+          <Button type="button" variant="outline" className="reset" onClick={reset}>
+            Reset
+          </Button>
         </header>
-
-        <section className="deck" aria-label="Transport">
-          <div className="readout">
-            <p className="clock">{formatStep(step)}</p>
-            <p className="period">Step</p>
-            <p className="when">
-              {city.label} · {barSeconds(bpm).toFixed(1)}s / bar
-            </p>
-          </div>
-          <div className="transport">
-            <Button
-              type="button"
-              className="play"
-              aria-pressed={playing}
-              aria-label={playing ? "Pause" : "Play"}
-              onClick={togglePlay}
-            >
-              {playing ? <PauseMark /> : <PlayMark />}
-            </Button>
-            <label className="fader">
-              <span>
-                Tempo <b>{bpm}</b>
-              </span>
-              <Slider
-                min={60}
-                max={180}
-                step={1}
-                value={[bpm]}
-                aria-label="Tempo"
-                onValueChange={(value) => setBpm(value[0] ?? bpm)}
-              />
-              <span className="fader-meta">Quarter note</span>
-            </label>
-            <label className="fader">
-              <span>
-                Level <b>{Math.round(volume * 100)}</b>
-              </span>
-              <Slider
-                min={0}
-                max={100}
-                step={1}
-                value={[Math.round(volume * 100)]}
-                aria-label="Level"
-                onValueChange={(value) => setVolume((value[0] ?? 82) / 100)}
-              />
-              <span className="fader-meta">Output</span>
-            </label>
-            <div className="fader steps">
-              <span>Pattern</span>
-              <Button type="button" variant="outline" onClick={reset}>
-                Reset
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <p className="caption">{city.note}</p>
-
         <Sequencer
           voices={city.voices}
           pattern={pattern}
@@ -243,22 +211,14 @@ export default function App() {
           onPreview={(id) => engineRef.current?.preview(id)}
           onJump={jump}
           onWrite={write}
-          onHover={setHover}
         />
-
-        <footer className="foot">
-          <div>
-            <p className="line">{hoverText ?? `${formatStep(step)}  ${sounding}`}</p>
-            <p className="line dim">Click a pad to write the bar. Click a name to hear it. Synthesized, no samples.</p>
-          </div>
-        </footer>
       </div>
     </div>
   );
 }
 
 function toHits(ids: string[], pattern: number[][], muted: ReadonlySet<string>): StepHit[][] {
-  const steps = pattern[0]?.length ?? 16;
+  const steps = pattern[0]?.length ?? 24;
   const hits: StepHit[][] = Array.from({ length: steps }, () => []);
   ids.forEach((id, voice) => {
     const row = pattern[voice] ?? [];
@@ -267,28 +227,6 @@ function toHits(ids: string[], pattern: number[][], muted: ReadonlySet<string>):
     }
   });
   return hits;
-}
-
-function soundingNames(
-  voices: { id: string; name: string }[],
-  pattern: number[][],
-  step: number,
-  muted: ReadonlySet<string>,
-): string {
-  const names = voices.filter((voice, index) => !muted.has(voice.id) && (pattern[index]?.[step] ?? 0) > 0).map((voice) => voice.name);
-  return names.length > 0 ? names.join("  ") : "rest";
-}
-
-function describeHover(
-  voices: { name: string; hint: string }[],
-  pattern: number[][],
-  hover: Hover,
-): string | null {
-  if (!hover) return null;
-  const voice = voices[hover.voice];
-  const velocity = pattern[hover.voice]?.[hover.step] ?? 0;
-  if (!voice) return null;
-  return `${formatStep(hover.step)}  ${voice.name}  ${voice.hint}  ${velocity > 0 ? "on" : "off"}`;
 }
 
 function PlayMark() {

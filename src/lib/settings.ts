@@ -1,8 +1,8 @@
 import { isCityId, presetPatterns } from "../kits.ts";
 import type { CityId } from "../types.ts";
 
-const SETTINGS_KEY = "city-rhythm-v2";
-const PATTERN_KEY = "city-rhythm-patterns-v2";
+const SETTINGS_KEY = "city-rhythm-v3";
+const PATTERN_KEY = "city-rhythm-patterns-v3";
 
 export type Settings = {
   cityId: CityId;
@@ -62,7 +62,7 @@ export function savePatterns(patterns: Record<CityId, number[][]>): void {
 
 function isPattern(value: unknown, voices: number): value is number[][] {
   if (!Array.isArray(value) || value.length !== voices) return false;
-  return value.every((row) => Array.isArray(row) && row.length === 16 && row.every((cell) => typeof cell === "number"));
+  return value.every((row) => Array.isArray(row) && row.length === 24 && row.every((cell) => typeof cell === "number"));
 }
 
 function clamp(value: unknown, min: number, max: number, fallback: number): number {

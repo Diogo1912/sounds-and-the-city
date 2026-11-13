@@ -122,7 +122,7 @@ export class Engine {
     const horizon = ctx.currentTime + 0.16;
     while (this.nextTime < horizon) {
       const when = this.nextTime;
-      const count = this.pattern.length || 16;
+      const count = this.pattern.length || 24;
       const index = ((this.step % count) + count) % count;
       for (const hit of this.pattern[index] ?? []) {
         if (!hit.muted && hit.velocity > 0) {

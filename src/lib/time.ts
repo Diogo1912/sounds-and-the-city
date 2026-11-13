@@ -1,12 +1,8 @@
-/** One step is a sixteenth note. A bar is 16 steps. */
+/** One step is one hour, played as one quarter note. */
 export function secondsPerStep(bpm: number): number {
-  return 60 / bpm / 4;
+  return 60 / bpm;
 }
 
-export function barSeconds(bpm: number): number {
-  return (4 * 60) / bpm;
-}
-
-export function formatStep(step: number): string {
-  return String(step + 1).padStart(2, "0");
+export function formatHour(step: number): string {
+  return String(step).padStart(2, "0");
 }
