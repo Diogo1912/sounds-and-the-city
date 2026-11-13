@@ -379,9 +379,12 @@ export default function App() {
           </div>
         ) : null}
         <p className="credits">
-          Credits: mostly CC0. Taiko by{" "}
-          <a href="https://freesound.org/people/xtrgamr/sounds/441646/">xtrgamr</a>, CC BY 4.0. Bombo legüero by{" "}
-          <a href="https://commons.wikimedia.org/wiki/File:Bombo_Leg%C3%BCero_Grave.ogg">ZappaMidiPF</a>, CC BY-SA 4.0.
+          Credits: mostly CC0. Tokyo Metro horn by JIRCTRAINZ?,{" "}
+          <a href="https://commons.wikimedia.org/wiki/File:TM6000_horn.wav">Wikimedia Commons</a>, CC BY-SA 4.0. Suica beep
+          by <a href="https://freesound.org/people/Hinoki.owo/sounds/796687/">Hinoki.owo</a>, CC BY 4.0. Singing bowl by{" "}
+          <a href="https://commons.wikimedia.org/wiki/User:%D7%93%D7%92_%D7%91%D7%9C%D7%99_%D7%9E%D7%9C%D7%97">דג בלי מלח</a>,{" "}
+          <a href="https://commons.wikimedia.org/wiki/File:Tibetan_Singing_Bowl_hit_4.5inch.flac">Wikimedia Commons</a>, CC
+          BY-SA 4.0.
         </p>
       </div>
     </div>

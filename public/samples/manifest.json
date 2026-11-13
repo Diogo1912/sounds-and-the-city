@@ -1,29 +1,34 @@
 {
-  "datasets": {
-    "nyc-subway": {
-      "Manhattan": "nyc-subway/manhattan-ride-cymbal.ogg",
-      "Brooklyn": "nyc-subway/brooklyn-steel-pan.ogg",
-      "Queens": "nyc-subway/queens-conga.ogg",
-      "Bronx": "nyc-subway/bronx-snare.ogg",
-      "Staten Island": "nyc-subway/staten-island-bass-drum.ogg"
-    },
-    "earthquakes": {
-      "California": "earthquakes/california-cajon.ogg",
-      "Alaska": "earthquakes/alaska-frame-drum.ogg",
-      "Hawaii": "earthquakes/hawaii-ipu.ogg",
-      "rest of the Americas": "earthquakes/americas-bombo-leguero.ogg",
-      "Pacific": "earthquakes/pacific-log-drum.ogg",
-      "everywhere else": "earthquakes/elsewhere-djembe.ogg"
-    },
-    "air-quality": {
-      "New York": "air-quality/new-york-hihat.ogg",
-      "Amsterdam": "air-quality/amsterdam-bicycle-bell.ogg",
-      "Tokyo": "air-quality/tokyo-taiko.ogg",
-      "London": "air-quality/london-snare.ogg",
-      "Delhi": "air-quality/delhi-tabla.ogg",
-      "Los Angeles": "air-quality/los-angeles-timbales.ogg"
-    }
+  "new-york": {
+    "subway": "new-york/subway.ogg",
+    "horn": "new-york/horn.ogg",
+    "turnstile": "new-york/turnstile.ogg",
+    "steam": "new-york/steam.ogg",
+    "chime": "new-york/chime.ogg",
+    "hammer": "new-york/hammer.ogg"
   },
-  "format": "mono 44.1 kHz Ogg Vorbis",
-  "notes": "Keys are human track names from the project brief. Map them onto whatever IDs the app already uses for boroughs, regions, and cities."
+  "amsterdam": {
+    "tram": "amsterdam/tram.ogg",
+    "bell": "amsterdam/bell.ogg",
+    "cobbles": "amsterdam/cobbles.ogg",
+    "canal": "amsterdam/canal.ogg",
+    "carillon": "amsterdam/carillon.ogg",
+    "bridge": "amsterdam/bridge.ogg"
+  },
+  "tokyo": {
+    "train": "tokyo/train.ogg",
+    "crossing": "tokyo/crossing.ogg",
+    "gate": "tokyo/gate.ogg",
+    "rail": "tokyo/rail.ogg",
+    "door": "tokyo/door.ogg",
+    "bowl": "tokyo/bowl.ogg"
+  },
+  "london": {
+    "bell": "london/bell.ogg",
+    "tube": "london/tube.ogg",
+    "cab": "london/cab.ogg",
+    "bus": "london/bus.ogg",
+    "rain": "london/rain.ogg",
+    "diesel": "london/diesel.ogg"
+  }
 }

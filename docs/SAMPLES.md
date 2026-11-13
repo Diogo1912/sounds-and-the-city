@@ -1,66 +1,75 @@
-# City Rhythm — percussion samples
+# City Rhythm samples v2
 
-Real recorded one-shot hits for the City Rhythm drum machine. Each track is a place; each file is a short percussive instrument chosen to fit that place.
+Field-recording one-shots for the City Rhythm beat-making toy. Each track is a cut of a real city sound object, not a generic drum hit.
 
-All packaged files are **mono 44.1 kHz Ogg Vorbis**, silence-trimmed, peak-normalised to about −1 dBFS, and under 20 KB. `ffprobe` duration is greater than 0 for every file.
+All 24 files are mono, 44.1 kHz, Vorbis (`.ogg`), peak-normalised to about −1 dBFS, with a tight attack so the transient lands on the beat. Most hits are under 1.5 s; bells, the carillon, and the singing bowl are allowed to ring up to about 3 s. Every file is under 150 KB.
 
-**Licences were read from the source pages, not assumed.** Prefer CC0; two files are not CC0 (Tokyo is CC BY 4.0; rest of the Americas is CC BY-SA 4.0 — see below).
+**Licences.** Prefer CC0, then CC BY. No CC-BY-NC material is included. Licences were read from the Freesound sound page or the Wikimedia Commons MediaWiki API (`LicenseShortName` / `LicenseUrl` / `Artist`), not from search-result chrome. Do not treat this file as a licence grant; follow the source page if anything conflicts.
 
-**Freesound originals:** downloading the original WAV from Freesound requires a login. For every Freesound item below, the packaged file was made from the site’s official HQ preview (`cdn.freesound.org/previews/...-hq.mp3`). The licence still applies to the sound. Replacing a preview with the original WAV later would be a quality upgrade, not a licence change.
+**Attribution.** CC0 does not require credit; authors are listed anyway. Three tracks are not CC0 and **must** be credited in the app:
 
-Processing: converted to mono, leading silence trimmed, a little trailing silence trimmed while keeping the natural decay, short fade-out, peak-normalised.
+- `tokyo/train.ogg` — CC BY-SA 4.0, JIRCTRAINZ? (as credited on Wikimedia Commons). Adaptations, including this trim/conversion, must be shared under CC BY-SA 4.0.
+- `tokyo/gate.ogg` — CC BY 4.0, Hinoki.owo.
+- `tokyo/bowl.ogg` — CC BY-SA 4.0, Wikimedia user דג בלי מלח. Adaptations must be shared under CC BY-SA 4.0.
 
----
+**Sources and encoding.** Wikimedia originals were downloaded from `upload.wikimedia.org`. Freesound originals require a login, so the official HQ MP3 previews on `cdn.freesound.org` were used; they are the same recordings under the same licences. Each one-shot was cut with ffmpeg, converted to mono 44.1 kHz, given a 4 ms fade-in and a short fade-out, and encoded with libvorbis q=5.
 
-## NYC subway
-
-| Track | Instrument | Why it fits | Source page | Licence | Attribution | Local file | Duration |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Manhattan | Ride cymbal | Manhattan is the historic centre of jazz; the ride cymbal is the timekeeper of that kit. | https://freesound.org/people/CBeeching/sounds/117002/ | CC0 1.0 | Not required. Source: “Ride_01-9.wav” by CBeeching, Freesound, CC0. Packaged from the official HQ preview. | `nyc-subway/manhattan-ride-cymbal.ogg` | 1.279 s |
-| Brooklyn | Steel pan (toy instrument recording) | Brooklyn has a large West Indian and Caribbean community (Labour Day Carnival). A steel pan hit is the distinctive voice. **Limitation:** this is a *toy* steel drum, the only short CC0 one-shot whose licence and file I could verify. A full-size pan would be a welcome replacement. The source was very quiet and was heavily gain-staged. | https://freesound.org/people/potentjello/sounds/194073/ | CC0 1.0 | Not required. Source: “Toy Steel Drum 1.wav” by potentjello, Freesound, CC0. Packaged from the official HQ preview. | `nyc-subway/brooklyn-steel-pan.ogg` | 0.271 s |
-| Queens | Conga (high) | Queens is one of the most Latin American boroughs in the city; the conga is a core Afro-Cuban drum heard across those communities. | https://freepats.zenvoid.org/Percussion/world-and-rare-percussion.html | CC0 1.0 | Not required. Source: FreePats World Percussion (2020-09-05), file `samples/HighConga/v2_01_01.wav`. The conga samples in that pack come from the Versilian Community Sample Library (Versilian Studios LLC), also CC0. Original WAV, no login. | `nyc-subway/queens-conga.ogg` | 0.650 s |
-| Bronx | Acoustic snare drum | The Bronx is the birthplace of hip-hop; a punchy recorded snare is the backbeat of that breakbeat tradition. This is a real acoustic snare oneshot (not an 808 or a synth). | https://freesound.org/people/lennartgreen/sounds/860525/ | CC0 1.0 | Not required. Source: “Punchy Rock Snare G 196 Hz Oneshot” by lennartgreen, Freesound, CC0. Packaged from the official HQ preview. | `nyc-subway/bronx-snare.ogg` | 0.613 s |
-| Staten Island | 24-inch bass drum | Staten Island is Wu-Tang Clan’s borough; a deep acoustic kick is the “boom” in boom-bap, and it gives the subway kit a low foundation distinct from the Bronx snare. | https://freesound.org/people/lennartgreen/sounds/860524/ | CC0 1.0 | Not required. Source: “Big Rock Bass Drum 24in One Shot” by lennartgreen, Freesound, CC0. Packaged from the official HQ preview. | `nyc-subway/staten-island-bass-drum.ogg` | 0.977 s |
+**Weak matches** are flagged in the tables below. Several hits are the right *kind* of object but were not recorded in that city, or are mixed with other street/train noise.
 
 ---
 
-## Earthquakes (USGS regions)
+## New York
 
-| Track | Instrument | Why it fits | Source page | Licence | Attribution | Local file | Duration |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| California | Cajón (flamenco-style) | The cajón is Peruvian in origin and is now a staple of California’s Latin and acoustic scenes. **Note:** this recording is of a *cajón flamenco* (the Spanish-style instrument) from the FreePats pack, not a field recording from California. | https://freepats.zenvoid.org/Percussion/world-and-rare-percussion.html | CC0 1.0 | Not required. Source: FreePats World Percussion (2020-09-05), file `samples/CajonFlamenco/106.wav`. Recorded January 2019 by Xavimart, Gonzalo, and Roberto. Original WAV, no login. | `earthquakes/california-cajon.ogg` | 0.343 s |
-| Alaska | Frame drum | Frame drums are used by Alaska Native and Inuit musical traditions (for example the qilaun). **This is a generic studio frame-drum oneshot**, not a recording of a ceremonial or Alaska Native drum — a respectful choice that still has the right voice. | https://freesound.org/people/cabled_mess/sounds/345635/ | CC0 1.0 | Not required. Source: “Frame drum_oneshot_RAW_15.wav” by cabled_mess, Freesound, CC0. Author describes it as a simple frame drum recorded with a Rode NT5 and Zoom H5. Packaged from the official HQ preview. | `earthquakes/alaska-frame-drum.ogg` | 1.135 s |
-| Hawaii | Ipu (Hawaiian gourd drum), “pa” stroke | The ipu is a traditional Hawaiian percussion instrument. This is a full-hand “pa” hit from a pack labelled as ipu samples. | https://freesound.org/people/volsp/sounds/537190/ | CC0 1.0 | Not required. Source: “ipu.wav” by volsp, Freesound, CC0. Description: “Full-hand hit, described as ‘pa.’” Packaged from the official HQ preview. | `earthquakes/hawaii-ipu.ogg` | 0.551 s |
-| Rest of the Americas | Bombo legüero (grave / low) | The bombo legüero is an Argentine folk bass drum, a distinctive low voice for the rest of the Americas. | https://commons.wikimedia.org/wiki/File:Bombo_Legüero_Grave.ogg | **CC BY-SA 4.0** | **Required.** “Bombo Legüero Grave.ogg” by ZappaMidiPF, Wikimedia Commons, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0). This packaged file was trimmed, converted to mono Ogg Vorbis, and peak-normalised; that adaptation should also be shared under CC BY-SA 4.0. Original file, no login. | `earthquakes/americas-bombo-leguero.ogg` | 0.744 s |
-| Pacific | Log / slit drum | Slit drums (log drums, and related instruments such as the Polynesian *pātē* / *toʻere*) are traditional percussion across much of the Pacific. This recording is labelled “Log Drum (slitdrum0_ff_1.wav)”. | https://freesound.org/people/sgossner/sounds/375655/ | CC0 1.0 | Not required. Source: “Log Drum (slitdrum0_ff_1.wav)” by sgossner, Freesound, CC0. Packaged from the official HQ preview. | `earthquakes/pacific-log-drum.ogg` | 0.345 s |
-| Everywhere else | Djembe slap | The djembe travelled from West Africa into global percussion practice, so it works as the catch-all “everywhere else” voice: a sharp slap, distinct from the other drums. | https://freesound.org/people/PanPiper5/sounds/659910/ | CC0 1.0 | Not required. Source: “Djembe Slap.wav” by PanPiper5, Freesound, CC0. Packaged from the official HQ preview. | `earthquakes/elsewhere-djembe.ogg` | 0.672 s |
+| Track | What it is | Source | Licence | Attribution | Notes |
+|---|---|---|---|---|---|
+| `subway` | NYC subway train brake squeal, a ~1 s burst as the train screeches to a halt | [carroll27 187313](https://freesound.org/people/carroll27/sounds/187313/) *NYC_Subway train, screeching to a halt* | CC0 1.0 | carroll27 | Strong match. The original is quiet and was gained up substantially. |
+| `horn` | First short take of a car horn honk | [BaggoNotes 719428](https://freesound.org/people/BaggoNotes/sounds/719428/) *CarHorn_Takes* | CC0 1.0 | BaggoNotes | Real horn, recorded with an AT2020 and Zoom. Not labelled as a New York taxi horn. |
+| `turnstile` | Metal NYC subway turnstile clack after a Metrocard swipe | [SpliceSound 369875](https://freesound.org/people/SpliceSound/sounds/369875/) *Subway, card swipe, double beep and turnstile* | CC0 1.0 | SpliceSound | Cut from the clack cluster, not the earlier double-beep. A little residual station noise sits under the hit. |
+| `steam` | Close-up steam radiator: metallic clang with sputtering water | [flood-mix 413476](https://freesound.org/people/flood-mix/sounds/413476/) *RADIATOR - Metallic clanging, water spouting* | CC0 1.0 | flood-mix | **Weak place match:** a real radiator clang/hiss, but not labelled as a New York field recording. Punchier than the quieter NYC-specific radiator beds that were considered (sethlind 265013, mr_roboto24 259527). |
+| `chime` | NYC subway door-opening ding-dong | [carroll27 187314](https://freesound.org/people/carroll27/sounds/187314/) *NYC_Subway, ding dong door opening sound* | CC0 1.0 | carroll27 | Strong match. Two-tone chime, trimmed of a short lead-in. |
+| `hammer` | Short jackhammer-and-compressor burst | [the_yura 156893](https://freesound.org/people/the_yura/sounds/156893/) *Jackhammer and compressor* | CC0 1.0 | the_yura | Real pneumatic hits, not a pavement-only close-up; some compressor air is in the bed. Location not specified. |
+
+## Amsterdam
+
+| Track | What it is | Source | Licence | Attribution | Notes |
+|---|---|---|---|---|---|
+| `tram` | Amsterdam streetcar passing and using its warning bell | [ajvds 123990](https://freesound.org/people/ajvds/sounds/123990/) *Tram02 links rechts* | CC0 1.0 | ajvds | Strong place match (Amsterdam tram). The cut is a high-frequency burst from the pass-by; wheel/squeal energy is mixed with the bell, so it is not a perfectly isolated ding-ding. |
+| `bell` | Bicycle bell, single ding with natural ring | [File:Bicycle-bell-1.wav](https://commons.wikimedia.org/wiki/File:Bicycle-bell-1.wav) | CC0 1.0 | Soundscape_Leuphana (Wikimedia Commons) | Kept from v1; this is the bike bell that already worked in the kit. |
+| `cobbles` | Single thud/cluster of a bicycle riding over cobblestones | [gecop 528158](https://freesound.org/people/gecop/sounds/528158/) *cobblestones* | CC0 1.0 | gecop | Right object (bike on cobbles). Recording location is not given, so it is not confirmed as Amsterdam stone. |
+| `canal` | One water splash / slap | [vero.marengere 524524](https://freesound.org/people/vero.marengere/sounds/524524/) *Water Splash in Lake 05* | CC0 1.0 | vero.marengere | **Weak place match:** a real splash, recorded in a lake, not an Amsterdam canal. |
+| `carillon` | One carillon / church-chime note with ~2.7 s of ring | [Julien_Matthey 274987](https://freesound.org/people/Julien_Matthey/sounds/274987/) *Carillon du Monts des Arts, Bruxelles* | CC0 1.0 | Julien_Matthey | **Weak place match:** a real carillon, recorded at Mont des Arts, Brussels, not Westertoren or another Amsterdam tower. |
+| `bridge` | Metal clank as an Amsterdam tram drives onto a bridge | [erilee 108360](https://freesound.org/people/erilee/sounds/108360/) *erilee_tram_over_bridge* | CC0 1.0 | erilee | Recorded in Amsterdam, and it is a metal bridge clank, but **not** a drawbridge warning bell. Some tram/road bed remains under the hit. |
+
+## Tokyo
+
+| Track | What it is | Source | Licence | Attribution | Notes |
+|---|---|---|---|---|---|
+| `train` | Tokyo Metro 6000 series train horn, one blast | [File:TM6000_horn.wav](https://commons.wikimedia.org/wiki/File:TM6000_horn.wav) | CC BY-SA 4.0 | JIRCTRAINZ? (as credited on Wikimedia Commons) | Real Tokyo Metro horn. Credit required; share-alike applies. Station departure melodies were avoided because of composition copyright. |
+| `crossing` | Japanese railway level-crossing electronic bell (*kan-kan* / boom-gate beeping), short loop | [JotrainG 650317](https://freesound.org/people/JotrainG/sounds/650317/) *Japanese Railway Level Crossing Electronic Beeping Loop* | CC0 1.0 | JotrainG | Strong object match, recorded in Japan. Slightly longer than 1.5 s so two or three beeps can land as a phrase. |
+| `gate` | Suica IC-card beep at a JR ticket gate, Tokyo station | [Hinoki.owo 796687](https://freesound.org/people/Hinoki.owo/sounds/796687/) *Card Beep in Japan Railways Ticket Gate* | CC BY 4.0 | Hinoki.owo | Strong match. Credit required. Tight cut of the beep only. |
+| `rail` | Onboard rail-joint wheel clacks (a short double clack) | [kyles 637908](https://freesound.org/people/kyles/sounds/637908/) *train passenger India onboard rail clacks between cars maybe* | CC0 1.0 | kyles | **Weak place match:** the right kind of rail-joint clack, but recorded on a passenger train in India, not Tokyo. |
+| `door` | Train door-closing warning signal, recorded inside a train | [Garuda1982 337754](https://freesound.org/people/Garuda1982/sounds/337754/) *train door closing signal* | CC0 1.0 | Garuda1982 | **Weak place match:** a real door-warning beep phrase, but the recording does not state that it is a Japanese / Tokyo train. |
+| `bowl` | Single strike of a 4.5-inch Tibetan singing bowl, with ring | [File:Tibetan Singing Bowl hit 4.5inch.flac](https://commons.wikimedia.org/wiki/File:Tibetan_Singing_Bowl_hit_4.5inch.flac) | CC BY-SA 4.0 | Wikimedia user [דג בלי מלח](https://commons.wikimedia.org/wiki/User:%D7%93%D7%92_%D7%91%D7%9C%D7%99_%D7%9E%D7%9C%D7%97) | **Weak cultural match:** a clean singing-bowl / rin-like strike, but it is a Tibetan bowl, not a confirmed Japanese *rin*. Credit required; share-alike applies. |
+
+## London
+
+| Track | What it is | Source | Licence | Attribution | Notes |
+|---|---|---|---|---|---|
+| `bell` | One Big Ben strike / large-bell bong, with ~3 s of ring | [hyderpotter 80290](https://freesound.org/people/hyderpotter/sounds/80290/) *BigBenstrikes* | CC0 1.0 | hyderpotter | Strong object match. Cut is a single strike, not the full hour chime. |
+| `tube` | Short burst from the interior of an empty District Line train between Westminster and Victoria (high-frequency door/electrical beeps over train rumble) | [blaukreuz 252289](https://freesound.org/people/blaukreuz/sounds/252289/) *140802_London_TubeWestminsterVictoriaIn_F* | CC0 1.0 | blaukreuz | Real London Underground interior. **Not an isolated door-chime** — the beeps sit in the carriage bed. Speech / “mind the gap” was avoided on purpose. |
+| `cab` | Car door slam, close and punchy | [mandymatz 424031](https://freesound.org/people/mandymatz/sounds/424031/) *Car Door Slam* | CC0 1.0 | mandymatz | **Weak object match:** a solid door slam, but the car is a late-2000s Chrysler sedan, not a London black cab. |
+| `bus` | Routemaster bus bell ding | [peteberry007 475211](https://freesound.org/people/peteberry007/sounds/475211/) *routemaster bell nice* | CC0 1.0 | peteberry007 | Strong match (classic London bus bell). |
+| `rain` | Short burst of heavy rain heard from under an umbrella | [TariqMK 497151](https://freesound.org/people/TariqMK/sounds/497151/) *Rain Underneath Umbrella* | CC0 1.0 | TariqMK | Right texture (rain/umbrella patter). Not a London-specific recording. |
+| `diesel` | Short, fairly steady diesel-engine idle chug, usable as a loopable hit | [C-V 565598](https://freesound.org/people/C-V/sounds/565598/) *Diesel idle 1* | CC0 1.0 | C-V | **Weak object match:** a real diesel idle, described as a dually (pickup) engine, not a London bus. |
 
 ---
 
-## Air quality (NO₂ cities)
+## Processing notes
 
-| Track | Instrument | Why it fits | Source page | Licence | Attribution | Local file | Duration |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| New York | Closed hi-hat | A tight closed hi-hat sits with the Manhattan ride as a jazz-kit voice for New York, without clashing with the subway snare and kick. Same recordist as the Manhattan ride. | https://freesound.org/people/CBeeching/sounds/75045/ | CC0 1.0 | Not required. Source: “Hat_05-9.wav” by CBeeching, Freesound, CC0. Packaged from the official HQ preview. | `air-quality/new-york-hihat.ogg` | 0.476 s |
-| Amsterdam | Bicycle bell | The fietsbel is the most Amsterdam percussion there is: short, metallic, and instantly local. | https://commons.wikimedia.org/wiki/File:Bicycle-bell-1.wav | CC0 1.0 | Not required. Source: “Bicycle-bell-1.wav” by Soundscape_Leuphana, recorded and edited by Marcus Speckin, 12 November 2013, Leuphana Universität Lüneburg. Wikimedia Commons, CC0. Original WAV, no login. | `air-quality/amsterdam-bicycle-bell.ogg` | 1.452 s |
-| Tokyo | Taiko (ensemble hit) | Taiko is the Japanese drum most people will hear as “Tokyo.” This is a single hit from a taiko ensemble. | https://freesound.org/people/xtrgamr/sounds/441646/ | **CC BY 4.0** | **Required.** “TAIKOENS.wav” by xtrgamr, Freesound, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). This packaged file was converted to mono Ogg Vorbis and peak-normalised. Packaged from the official HQ preview. | `air-quality/tokyo-taiko.ogg` | 0.508 s |
-| London | Acoustic snare drum | A crisp acoustic snare evokes Britain’s military and orchestral drum tradition (and the kit snare in London pop, punk, and dub). | https://freesound.org/people/KEVOY/sounds/82249/ | CC0 1.0 | Not required. Source: “acoustic snare.wav” by KEVOY, Freesound, CC0. Packaged from the official HQ preview. | `air-quality/london-snare.ogg` | 0.673 s |
-| Delhi | Tabla (closed “tas” stroke) | The tabla is the lead percussion of Hindustani music, closely tied to Delhi’s classical and popular sound. This is a closed-stroke *tas* on the tabla. | https://freesound.org/people/mmiron/sounds/130425/ | CC0 1.0 | Not required. Source: “tas_2.wav” by mmiron, Freesound, CC0. Description: “Closed stroke tas on a tabla.” Packaged from the official HQ preview. | `air-quality/delhi-tabla.ogg` | 1.154 s |
-| Los Angeles | Timbales (high / macho rimshot) | Timbales are central to salsa and Latin music in Los Angeles’s Mexican and Latin American communities, and they cut clearly on a sequencer. | https://freesound.org/people/Sassaby/sounds/533089/ | CC0 1.0 | Not required. Source: “Timbales High Rimshot (Macho)” by Sassaby, Freesound, CC0. Packaged from the official HQ preview. | `air-quality/los-angeles-timbales.ogg` | 1.197 s |
+Cuts start a few milliseconds before the chosen transient (except where the source already starts on the hit). Peak normalisation was applied after the trim. Quiet sources (especially the subway squeal) were gained by up to about 17 dB. Waveform duration, channel count, sample rate, file size, peak level, and onset time were checked with ffmpeg/ffprobe after encode.
 
----
+Licence URLs:
 
-## Licence summary for credits
-
-- **CC0 (no attribution required, but sources are listed above):** 15 of 17 files.
-- **CC BY 4.0 (attribution required):** Tokyo taiko — xtrgamr, Freesound.
-- **CC BY-SA 4.0 (attribution + share-alike on adaptations of this sample):** rest of the Americas bombo legüero — ZappaMidiPF, Wikimedia Commons.
-- No CC-BY-NC samples were used.
-
-Suggested short credits blurb for the README / UI:
-
-> Drum samples: mostly CC0 recordings from Freesound, FreePats / Versilian Community Sample Library, and Wikimedia Commons. Taiko ensemble hit “TAIKOENS.wav” by xtrgamr (Freesound, CC BY 4.0). Bombo legüero by ZappaMidiPF (Wikimedia Commons, CC BY-SA 4.0). Full source list in `SAMPLES.md`.
-
-## Mapping
-
-See `manifest.json` for dataset → track → filename. Track keys are the human names from the project brief (Manhattan, Brooklyn, …; California, Alaska, …, “rest of the Americas”, “everywhere else”; New York, Amsterdam, …). Map them onto the app’s existing track IDs if those differ.
+- CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
+- CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+- CC BY-SA 4.0 — https://creativecommons.org/licenses/by-sa/4.0/

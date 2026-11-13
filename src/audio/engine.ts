@@ -1,4 +1,4 @@
-import { loadSampleBuffers, sampleKey } from "./samples.ts";
+import { loadSampleBuffers, sampleKey, trackMix } from "./samples.ts";
 import { makeNoise, triggerSynth, triggerVoice } from "./voices.ts";
 import { secondsPerStep } from "../lib/time.ts";
 import type { CityId, StepHit } from "../types.ts";
@@ -20,6 +20,7 @@ export class Engine {
   private cutoff = 0.5;
   private decay = 0.35;
   private samples = new Map<string, AudioBuffer>();
+  private active = new Map<string, { source: AudioBufferSourceNode; gain: GainNode }>();
   private samplesReady: Promise<void> = Promise.resolve();
   private timer = 0;
   private nextTime = 0;
@@ -210,9 +211,10 @@ export class Engine {
       triggerSynth(ctx, dest, this.city, hit.note, time, hit.velocity, this.cutoff, this.decay);
       return;
     }
-    const buffer = this.samples.get(sampleKey(this.city, hit.voice));
+    const key = sampleKey(this.city, hit.voice);
+    const buffer = this.samples.get(key);
     if (buffer) {
-      playSample(ctx, dest, buffer, time, hit.velocity);
+      this.playSample(ctx, dest, key, buffer, time, hit.velocity);
       return;
     }
     if (!this.noise) return;
@@ -225,14 +227,27 @@ export class Engine {
       if (item) this.onStep(item.index);
     }
   }
-}
 
-function playSample(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, velocity: number): void {
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(Math.max(0.001, Math.min(1, velocity)), time);
-  source.connect(gain);
-  gain.connect(dest);
-  source.start(time);
+  private playSample(ctx: AudioContext, dest: AudioNode, key: string, buffer: AudioBuffer, time: number, velocity: number): void {
+    const previous = this.active.get(key);
+    if (previous) {
+      previous.gain.gain.cancelScheduledValues(time);
+      previous.gain.gain.setValueAtTime(Math.max(previous.gain.gain.value, 0.0001), time);
+      previous.gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.015);
+      previous.source.stop(time + 0.02);
+    }
+    const mix = trackMix(key);
+    const level = Math.min(1.6, Math.max(0.001, velocity) * mix.gain);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(level, time);
+    gain.gain.setValueAtTime(level, time + mix.hold * 0.55);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + mix.hold);
+    source.connect(gain);
+    gain.connect(dest);
+    source.start(time);
+    source.stop(time + mix.hold + 0.02);
+    this.active.set(key, { source, gain });
+  }
 }

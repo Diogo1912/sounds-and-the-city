@@ -45,26 +45,12 @@ Drum hits are recorded one-shots. A track with no sample, or one that fails to l
 
 ## Credits
 
-Drum samples are for playback in this app. The full source list is in [SAMPLES.md](docs/SAMPLES.md).
+Each track is a field-recorded one-shot. The full source list is in [SAMPLES.md](docs/SAMPLES.md).
 
-Most files are CC0. Attribution is not required for those; the sources are still listed in `SAMPLES.md`.
+Most files are CC0. Attribution is not required for those; the authors are still listed in `SAMPLES.md`.
 
-Two files require attribution:
+Three files require attribution:
 
-- Tokyo taiko, used on the Tokyo train row: “TAIKOENS.wav” by [xtrgamr](https://freesound.org/people/xtrgamr/sounds/441646/), Freesound, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The file in this app was converted to mono Ogg Vorbis and peak-normalised, from the official Freesound HQ preview.
-- Rest-of-the-Americas bombo legüero, used on the Amsterdam bridge row: “[Bombo Legüero Grave.ogg](https://commons.wikimedia.org/wiki/File:Bombo_Leg%C3%BCero_Grave.ogg)” by ZappaMidiPF, Wikimedia Commons, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This copy was trimmed, converted to mono Ogg Vorbis, and peak-normalised. That adaptation is also shared under CC BY-SA 4.0.
-
-Other sources, all CC0:
-
-- Manhattan ride cymbal and New York hi-hat: [CBeeching](https://freesound.org/people/CBeeching/sounds/117002/), Freesound ([hat](https://freesound.org/people/CBeeching/sounds/75045/)).
-- Brooklyn toy steel pan: [potentjello](https://freesound.org/people/potentjello/sounds/194073/), Freesound.
-- Queens conga and California cajón: [FreePats World Percussion](https://freepats.zenvoid.org/Percussion/world-and-rare-percussion.html) / Versilian Community Sample Library.
-- Bronx snare and Staten Island bass drum: [lennartgreen](https://freesound.org/people/lennartgreen/sounds/860525/), Freesound.
-- Alaska frame drum: [cabled_mess](https://freesound.org/people/cabled_mess/sounds/345635/), Freesound.
-- Hawaii ipu: [volsp](https://freesound.org/people/volsp/sounds/537190/), Freesound.
-- Pacific log drum: [sgossner](https://freesound.org/people/sgossner/sounds/375655/), Freesound.
-- Djembe slap: [PanPiper5](https://freesound.org/people/PanPiper5/sounds/659910/), Freesound.
-- Amsterdam bicycle bell: [Soundscape_Leuphana](https://commons.wikimedia.org/wiki/File:Bicycle-bell-1.wav), Wikimedia Commons.
-- London snare: [KEVOY](https://freesound.org/people/KEVOY/sounds/82249/), Freesound.
-- Delhi tabla: [mmiron](https://freesound.org/people/mmiron/sounds/130425/), Freesound.
-- Los Angeles timbales: [Sassaby](https://freesound.org/people/Sassaby/sounds/533089/), Freesound.
+- Tokyo train: “[TM6000_horn.wav](https://commons.wikimedia.org/wiki/File:TM6000_horn.wav)” by JIRCTRAINZ?, Wikimedia Commons, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This copy was trimmed and converted to mono Ogg Vorbis. That adaptation is also shared under CC BY-SA 4.0.
+- Tokyo gate: “Card Beep in Japan Railways Ticket Gate” by [Hinoki.owo](https://freesound.org/people/Hinoki.owo/sounds/796687/), Freesound, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- Tokyo bowl: “[Tibetan Singing Bowl hit 4.5inch.flac](https://commons.wikimedia.org/wiki/File:Tibetan_Singing_Bowl_hit_4.5inch.flac)” by [דג בלי מלח](https://commons.wikimedia.org/wiki/User:%D7%93%D7%92_%D7%91%D7%9C%D7%99_%D7%9E%D7%9C%D7%97), Wikimedia Commons, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). This copy was trimmed and converted to mono Ogg Vorbis. That adaptation is also shared under CC BY-SA 4.0.
