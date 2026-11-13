@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { Knob } from "@/components/Knob";
+import { ScopeMeter } from "@/components/ScopeMeter";
 import { Sequencer } from "@/components/Sequencer";
 import { SynthPanel } from "@/components/SynthPanel";
+import { TempoDial } from "@/components/TempoDial";
 import { Engine } from "@/audio/engine";
 import { CITIES, SYNTH, cityById, demoSong, emptySong, writeCell } from "@/kits";
 import { loadSettings, loadSongs, saveSettings, saveSongs } from "@/lib/settings";
-import { formatHour } from "@/lib/time";
+import { dayPhase, formatHour } from "@/lib/time";
 import type { CityId, StepHit } from "@/types";
 
 const KEY_MAP = ["a", "s", "d", "f", "g", "h", "j", "k"];
@@ -27,6 +29,7 @@ export default function App() {
   const [armed, setArmed] = useState(SYNTH[stored.cityId].scale[0] ?? 60);
   const [recording, setRecording] = useState(false);
   const [takes, setTakes] = useState<Take[]>([]);
+  const [switching, setSwitching] = useState(false);
   const engineRef = useRef<Engine | null>(null);
   const playingRef = useRef(false);
   const stepRef = useRef(0);
@@ -170,6 +173,8 @@ export default function App() {
     if (id === cityId) return;
     const next = cityById(id);
     const tone = SYNTH[id];
+    setSwitching(true);
+    window.setTimeout(() => setSwitching(false), 280);
     setCityId(id);
     setBpm(next.bpm);
     setCutoff(tone.cutoff);
@@ -266,42 +271,10 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="face">
+      <div className={switching ? "face is-switching" : "face"} data-city={cityId} data-phase={dayPhase(step)}>
+        {cityId === "amsterdam" ? <span className="ripple" aria-hidden="true" /> : null}
         <header className="transport">
           <h1>City Rhythm</h1>
-          <Button
-            type="button"
-            className={playing ? "play is-on" : "play"}
-            aria-pressed={playing}
-            aria-label={playing ? "Pause" : "Play"}
-            onClick={togglePlay}
-          >
-            {playing ? <PauseMark /> : <PlayMark />}
-          </Button>
-          <p className="lcd">
-            {formatHour(step)}
-            <span>:00</span>
-          </p>
-          <label className="bpm">
-            <span>{bpm}</span>
-            <Slider
-              min={60}
-              max={180}
-              step={1}
-              value={[bpm]}
-              aria-label="Tempo"
-              onValueChange={(value) => setBpm(value[0] ?? bpm)}
-            />
-          </label>
-          <Slider
-            className="vol"
-            min={0}
-            max={100}
-            step={1}
-            value={[Math.round(volume * 100)]}
-            aria-label="Level"
-            onValueChange={(value) => setVolume((value[0] ?? 82) / 100)}
-          />
           <div className="seg" role="group" aria-label="City">
             {CITIES.map((item) => (
               <Button
@@ -316,22 +289,46 @@ export default function App() {
               </Button>
             ))}
           </div>
+          <Button
+            type="button"
+            className={playing ? "play is-on" : "play"}
+            aria-pressed={playing}
+            aria-label={playing ? "Pause" : "Play"}
+            onClick={togglePlay}
+          >
+            {playing ? <PauseMark /> : <PlayMark />}
+          </Button>
+          <p className="lcd" key={step}>
+            {formatHour(step)}
+            <span>:00</span>
+          </p>
+          <TempoDial city={cityId} value={bpm} resetValue={city.bpm} onChange={setBpm} />
+          <Knob
+            label="Level"
+            kind={cityId === "london" ? "roundel" : cityId === "amsterdam" ? "bell" : "bullet"}
+            size={48}
+            min={0}
+            max={100}
+            value={Math.round(volume * 100)}
+            resetValue={82}
+            onChange={(value) => setVolume(value / 100)}
+          />
+          <ScopeMeter engineRef={engineRef} vertical={cityId === "tokyo"} />
           <Button type="button" variant="outline" onClick={demo}>
             Demo
           </Button>
           <Button type="button" variant="outline" className="reset" onClick={reset}>
             Reset
           </Button>
-          <Button
+          <button
             type="button"
-            variant="outline"
-            className={recording ? "rec is-on" : "rec"}
+            className={recording ? "record is-on" : "record"}
             aria-pressed={recording}
-            aria-label={recording ? "Stop recording" : "Record"}
             onClick={toggleRecord}
           >
-            <i />
-          </Button>
+            <span className="record-cap" />
+            <span>{recording ? "Recording" : "Record"}</span>
+          </button>
         </header>
         <div className="workspace">
           <Sequencer
@@ -351,11 +348,14 @@ export default function App() {
             onWriteNote={writeNote}
           />
           <SynthPanel
+            city={cityId}
             name={synth.name}
             scale={synth.scale}
             armed={armed}
             cutoff={cutoff}
             decay={decay}
+            cutoffDefault={synth.cutoff}
+            decayDefault={synth.decay}
             onArm={playKey}
             onCutoff={setCutoff}
             onDecay={setDecay}

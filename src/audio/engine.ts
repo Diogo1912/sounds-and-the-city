@@ -12,6 +12,7 @@ export class Engine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
+  private analyser: AnalyserNode | null = null;
   private noise: AudioBuffer | null = null;
   private recorder: MediaRecorder | null = null;
   private recordChunks: Blob[] = [];
@@ -38,6 +39,10 @@ export class Engine {
 
   setCity(city: CityId): void {
     this.city = city;
+  }
+
+  getAnalyser(): AnalyserNode | null {
+    return this.analyser;
   }
 
   preload(): void {
@@ -167,8 +172,13 @@ export class Engine {
     compressor.ratio.value = 3.5;
     compressor.attack.value = 0.004;
     compressor.release.value = 0.2;
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.72;
     master.connect(compressor);
-    compressor.connect(ctx.destination);
+    compressor.connect(analyser);
+    analyser.connect(ctx.destination);
+    this.analyser = analyser;
     this.ctx = ctx;
     this.master = master;
     this.compressor = compressor;
