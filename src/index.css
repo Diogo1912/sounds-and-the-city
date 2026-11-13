@@ -527,6 +527,19 @@ h1 {
   color: var(--ink);
 }
 
+.credits {
+  margin: 0;
+  padding: 5px 10px 7px;
+  border-top: 1px solid #242424;
+  color: #6a6a6a;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.credits a {
+  color: #7d7d7d;
+}
+
 @media (max-width: 860px) {
   .app {
     padding: 0;

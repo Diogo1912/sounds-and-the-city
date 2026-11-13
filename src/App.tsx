@@ -56,6 +56,7 @@ export default function App() {
       loopedRef.current = false;
       void finishTake();
     });
+    engine.preload();
     engineRef.current = engine;
     return () => {
       engine.dispose();
@@ -373,6 +374,11 @@ export default function App() {
             ))}
           </div>
         ) : null}
+        <p className="credits">
+          Credits: mostly CC0. Taiko by{" "}
+          <a href="https://freesound.org/people/xtrgamr/sounds/441646/">xtrgamr</a>, CC BY 4.0. Bombo legüero by{" "}
+          <a href="https://commons.wikimedia.org/wiki/File:Bombo_Leg%C3%BCero_Grave.ogg">ZappaMidiPF</a>, CC BY-SA 4.0.
+        </p>
       </div>
     </div>
   );

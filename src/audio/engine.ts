@@ -1,3 +1,4 @@
+import { loadSampleBuffers, sampleKey } from "./samples.ts";
 import { makeNoise, triggerSynth, triggerVoice } from "./voices.ts";
 import { secondsPerStep } from "../lib/time.ts";
 import type { CityId, StepHit } from "../types.ts";
@@ -17,6 +18,8 @@ export class Engine {
   private recordDest: MediaStreamAudioDestinationNode | null = null;
   private cutoff = 0.5;
   private decay = 0.35;
+  private samples = new Map<string, AudioBuffer>();
+  private samplesReady: Promise<void> = Promise.resolve();
   private timer = 0;
   private nextTime = 0;
   private step = 0;
@@ -35,6 +38,13 @@ export class Engine {
 
   setCity(city: CityId): void {
     this.city = city;
+  }
+
+  preload(): void {
+    const ctx = this.ensure();
+    this.samplesReady = loadSampleBuffers(ctx).then((buffers) => {
+      this.samples = buffers;
+    });
   }
 
   setSynth(next: { cutoff: number; decay: number }): void {
@@ -58,11 +68,13 @@ export class Engine {
     if (ctx.state === "suspended") void ctx.resume();
     if (this.playing) return;
     this.playing = true;
-    this.runId += 1;
-    const runId = this.runId;
-    this.nextTime = ctx.currentTime + 0.05;
-    this.timer = window.setInterval(() => this.tick(runId), 25);
-    this.tick(runId);
+    const runId = ++this.runId;
+    void this.samplesReady.then(() => {
+      if (!this.playing || runId !== this.runId) return;
+      this.nextTime = ctx.currentTime + 0.05;
+      this.timer = window.setInterval(() => this.tick(runId), 25);
+      this.tick(runId);
+    });
   }
 
   pause(): void {
@@ -183,11 +195,17 @@ export class Engine {
   }
 
   private playHit(ctx: AudioContext, dest: AudioNode, time: number, hit: StepHit): void {
-    if (!this.noise || hit.muted || hit.velocity <= 0) return;
+    if (hit.muted || hit.velocity <= 0) return;
     if (hit.voice === "synth" && hit.note != null) {
       triggerSynth(ctx, dest, this.city, hit.note, time, hit.velocity, this.cutoff, this.decay);
       return;
     }
+    const buffer = this.samples.get(sampleKey(this.city, hit.voice));
+    if (buffer) {
+      playSample(ctx, dest, buffer, time, hit.velocity);
+      return;
+    }
+    if (!this.noise) return;
     triggerVoice(ctx, dest, this.noise, this.city, hit.voice, time, hit.velocity);
   }
 
@@ -197,4 +215,14 @@ export class Engine {
       if (item) this.onStep(item.index);
     }
   }
+}
+
+function playSample(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: number, velocity: number): void {
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(Math.max(0.001, Math.min(1, velocity)), time);
+  source.connect(gain);
+  gain.connect(dest);
+  source.start(time);
 }
