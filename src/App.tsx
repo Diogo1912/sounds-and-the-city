@@ -274,7 +274,10 @@ export default function App() {
       <div className={switching ? "face is-switching" : "face"} data-city={cityId} data-phase={dayPhase(step)}>
         {cityId === "amsterdam" ? <span className="ripple" aria-hidden="true" /> : null}
         <header className="transport">
-          <h1>City Rhythm</h1>
+          <div className={`plate plate-${cityId}`}>
+            <span>City Rhythm</span>
+            <strong>{city.label}</strong>
+          </div>
           <div className="seg" role="group" aria-label="City">
             {CITIES.map((item) => (
               <Button
@@ -332,6 +335,7 @@ export default function App() {
         </header>
         <div className="workspace">
           <Sequencer
+            city={cityId}
             voices={city.voices}
             pattern={song.drums}
             notes={song.notes}

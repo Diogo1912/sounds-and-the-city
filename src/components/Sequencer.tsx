@@ -1,14 +1,16 @@
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
+import { Glyph } from "@/components/Glyph";
 import { Button } from "@/components/ui/button";
 import { noteName } from "@/lib/notes";
 import { dayPhase, formatHour } from "@/lib/time";
-import type { Voice } from "@/types";
+import type { CityId, Voice } from "@/types";
 
 type Props = {
   voices: Voice[];
   pattern: number[][];
   notes: (number | null)[];
+  city: CityId;
   synthName: string;
   step: number;
   muted: ReadonlySet<string>;
@@ -25,6 +27,7 @@ export function Sequencer({
   voices,
   pattern,
   notes,
+  city,
   synthName,
   step,
   muted,
@@ -66,6 +69,7 @@ export function Sequencer({
             className={gutterClass(muted.has(voice.id), !muted.has(voice.id) && (pattern[voiceIndex]?.[step] ?? 0) > 0)}
           >
             <button type="button" className="track-name" onClick={() => onPreview(voice.id)}>
+              <Glyph city={city} id={voice.id} />
               {voice.name}
             </button>
             <Button
@@ -83,6 +87,7 @@ export function Sequencer({
         ))}
         <div className={gutterClass(muted.has("synth"), !muted.has("synth") && notes[step] != null)}>
           <button type="button" className="track-name" onClick={() => onPreview("synth")}>
+            <Glyph city={city} id="synth" />
             {synthName}
           </button>
           <Button

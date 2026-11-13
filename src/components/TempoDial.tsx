@@ -52,10 +52,13 @@ export function TempoDial({ city, value, resetValue, onChange }: Props) {
         {city !== "tokyo" && city !== "london" ? (
           <span className="tempo-rotor" style={{ transform: `rotate(${angle}deg)` }} />
         ) : null}
-        {city !== "tokyo" ? <span className="tempo-read">{value}</span> : null}
+        {city === "new-york" ? <span className="tempo-read">{value}</span> : null}
         {tip != null ? <span className="dial-tip">Tempo {tip}</span> : null}
       </button>
-      <span className="dial-label">Tempo</span>
+      <span className="dial-label">
+        {city === "amsterdam" || city === "london" ? <b>{value}</b> : null}
+        Tempo
+      </span>
     </div>
   );
 }
