@@ -455,13 +455,93 @@ h1 {
 }
 
 .synth {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
+  min-width: 0;
   background: var(--panel, #1a1a1a);
   border-top: 1px solid var(--line);
+}
+
+.synth-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 10px;
+}
+
+.synth-strip .keys {
+  min-width: min(100%, 260px);
+}
+
+.synth-strip .key {
+  min-width: 0;
+  touch-action: none;
+}
+
+.synth-edit,
+.patch-actions select,
+.patch-controls select {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--panel, #1a1a1a);
+  color: inherit;
+  font-size: 11px;
+}
+
+.synth-edit {
+  cursor: pointer;
+}
+
+.synth-edit[aria-expanded="true"] {
+  border-color: var(--led);
+}
+
+.synth-patch {
+  border-top: 1px solid var(--line);
+  padding: 10px;
+}
+
+.patch-actions,
+.patch-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+}
+
+.patch-actions label,
+.patch-controls > label:not(.dial) {
+  display: grid;
+  gap: 4px;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.patch-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 225px), 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.patch-groups fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+}
+
+.patch-groups legend {
+  padding: 0 4px;
+  color: var(--dim);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.synth :is(button, select):focus-visible {
+  outline: 2px solid var(--led);
+  outline-offset: 2px;
 }
 
 .synth-name {

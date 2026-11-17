@@ -25,12 +25,22 @@ Pick **New York**, **Amsterdam**, **Tokyo**, or **London**. Each city loads its 
 - **Play** runs the 24 hours. Space does the same. The clock is the current hour.
 - **Tempo** is the quarter-note BPM. One hour is one beat, so a day lasts `24 × 60 / BPM` seconds.
 - Click a pad to turn that hour on or off. Drag to paint. On a touch screen, tap.
-- The bottom row is that city's synth. Pick a key, then click an hour to place the note. Keys `A S D F G H J K` play the keys.
+- Pick a synth key, then click an hour in the bottom row to place the note. Hold a key on screen or use `A S D F G H J K` to play the synth. Click **Edit synth** to open the patch editor.
 - **Demo** loads a day. **Reset** clears it.
 - **Record** captures one pass from 00:00. The take shows up under the rack. Save downloads it.
 - Click a name to hear that sound. **M** mutes the row.
 
-Patterns are kept in the browser while you switch cities.
+Patterns and synth patches are saved separately for each city in your browser.
+
+## Shape a synth patch
+
+- **Oscillators** mixes two waveforms or uses oscillator B to frequency-modulate A. Adjust tuning, fine detune, sub oscillator, and noise.
+- **Filter** selects low-pass, high-pass, band-pass, or notch. Cutoff and resonance shape the tone, and the envelope amount sweeps the cutoff as a note plays.
+- **Envelope** sets attack, decay, sustain, and release. Cutoff and decay are on the main synth strip. **LFO** adds pitch vibrato, filter movement, or tremolo.
+- **Output** sets synth level and the percentage of a sequencer step each note is held. Cutoff, resonance, and level respond on held notes. Other sound edits apply to the next note.
+- Load any city preset or start with **Init · Sine**. **Reset patch** restores the current city's preset. **Demo** and the transport's **Reset** change the grid only.
+
+Drag a dial vertically or focus it and use the arrow keys. Double-click a dial to restore its city preset value.
 
 ## Kits
 

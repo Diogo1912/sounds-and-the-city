@@ -1,6 +1,6 @@
 # AGENTS.md
 
-City Rhythm is a browser drum machine with four city kits: New York, Amsterdam, Tokyo, and London. Each of the 24 steps is one hour of that city's day. Each drum track is a literal city sound object (subway, tram, ticket gate, bus bell), not a generic drum. Each city has its own synth lane, tempo, and panel. Demo loads a starter day. Reset clears the grid. Record captures one pass from 00:00 as a WebM take. Patterns stay in `localStorage` per city.
+City Rhythm is a browser drum machine with four city kits: New York, Amsterdam, Tokyo, and London. Each of the 24 steps is one hour of that city's day. Each drum track is a literal city sound object (subway, tram, ticket gate, bus bell), not a generic drum. Each city has its own synth lane, tempo, and panel. Demo loads a starter day. Reset clears the grid. Record captures one pass from 00:00 as a WebM take. Patterns and synth patches stay in `localStorage` per city.
 
 ## Stack and commands
 
@@ -25,7 +25,8 @@ npm run preview   # static dist on :47221
 | `src/types.ts` | `CityId` union. Adding a city starts here. |
 | `src/audio/engine.ts` | Web Audio graph, lookahead scheduler, sample playback, choke, recording, analyser |
 | `src/audio/samples.ts` | `city:voice` → file, gain trim, hold time. `SAMPLE_BY_TRACK` is derived from this. |
-| `src/audio/voices.ts` | Synthesised hits (fallback) and the synth lane |
+| `src/audio/voices.ts` | Synthesised drum hits (fallback) |
+| `src/audio/synth.ts`, `src/synthPatch.ts` | Synth voice graph, editable parameters, and city presets |
 | `src/audio/samples.test.ts` | Every manifest file is mapped exactly once |
 | `src/App.tsx` | Transport, city switch, keyboard, in-app credits |
 | `src/index.css` | Skins on `.face[data-city]`. Knobs, cells, plates, playhead |
@@ -42,7 +43,7 @@ npm run preview   # static dist on :47221
 Voice ids are stable keys (`subway`, `bell`, `train`). The sample key is `` `${cityId}:${voiceId}` ``. A new city needs all of:
 
 1. Extend `CityId` and `isCityId` in `src/types.ts`.
-2. Add the kit in `src/kits.ts`: label, bpm, six voices, a 24-hour pattern, `SYNTH` (name, cutoff, decay, 8-note scale), and `DEMO_NOTES`. Update `emptySongs`.
+2. Add the kit in `src/kits.ts`: label, bpm, six voices, a 24-hour pattern, `SYNTH` (name and 8-note scale), and `DEMO_NOTES`. Update `emptySongs`, `CITY_PATCHES` in `src/synthPatch.ts`, and `loadPatches` in `src/lib/settings.ts`.
 3. Put `public/samples/<city>/<voice>.ogg` files in place and add them to `manifest.json`.
 4. Add a `TRACKS` entry in `src/audio/samples.ts` with `file`, `gain`, and `hold`.
 5. Add a `.face[data-city="<id>"]` skin, a nameplate, cell shape, and glyphs. Give the tempo dial and record button a treatment that belongs to that city.
@@ -54,7 +55,7 @@ Current required credits: Tokyo train (Wikimedia Commons, CC BY-SA 4.0; the file
 
 ## Audio
 
-`Engine` builds one graph: master gain → compressor → analyser → destination. A lookahead timer schedules hits on `currentTime`. Each track decodes once into a buffer. Velocity scales level. `gain` in `samples.ts` level-matches peak-normalised files so horns and textures do not bury quieter hits. `hold` is the amp envelope in seconds: the voice stays up, then ramps to silence so a long ring (bell, bowl, carillon) or a texture (rain, diesel, tube) does not smear into the next hour. Retriggering the same `city:voice` chokes the previous voice with a short ramp. If fetch or decode fails, that track uses `triggerVoice` in `voices.ts`. The synth lane is always synthesised (`triggerSynth`), never a sample. Recording taps the compressor into a `MediaStream` and stops after one full day.
+`Engine` builds one graph: master gain → compressor → analyser → destination. A lookahead timer schedules hits on `currentTime`. Each track decodes once into a buffer. Velocity scales level. `gain` in `samples.ts` level-matches peak-normalised files so horns and textures do not bury quieter hits. `hold` is the amp envelope in seconds: the voice stays up, then ramps to silence so a long ring (bell, bowl, carillon) or a texture (rain, diesel, tube) does not smear into the next hour. Retriggering the same `city:voice` chokes the previous voice with a short ramp. If fetch or decode fails, that track uses `triggerVoice` in `voices.ts`. The synth lane uses `startSynthVoice` for the sequencer and keyboard. City patches control its oscillators, filters, envelope, and modulation. Recording taps the compressor into a `MediaStream` and stops after one full day.
 
 ## Design
 
@@ -64,7 +65,7 @@ The UI is a hardware instrument, not a marketing page. Keep it quiet and specifi
 - Each city is its own instrument: its own colour, cell material, nameplate, and controls. Do not recolour one generic layout.
 - Tempo, level, cutoff, and decay are rotary knobs, not sliders. Record is a labelled button with an on state.
 - Motion is transform and opacity, snappy, and off under `prefers-reduced-motion`. The scope canvas is the exception.
-- The grid gets the space. The synth is one short key row. On a phone, track names stay fixed while hours scroll.
+- The grid gets the space. The synth keeps one short key row with an expandable patch editor. On a phone, track names stay fixed while hours scroll.
 - Active steps must read in that city's accent. The playhead is the accent colour, not a white outline.
 
 ## Deployment

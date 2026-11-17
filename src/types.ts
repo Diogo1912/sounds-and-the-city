@@ -28,7 +28,5 @@ export type Song = {
 
 export type SynthSpec = {
   name: string;
-  cutoff: number;
-  decay: number;
   scale: number[];
 };

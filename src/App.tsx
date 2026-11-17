@@ -7,7 +7,8 @@ import { SynthPanel } from "@/components/SynthPanel";
 import { TempoDial } from "@/components/TempoDial";
 import { Engine } from "@/audio/engine";
 import { CITIES, SYNTH, cityById, demoSong, emptySong, writeCell } from "@/kits";
-import { loadSettings, loadSongs, saveSettings, saveSongs } from "@/lib/settings";
+import { loadPatches, loadSettings, loadSongs, savePatches, saveSettings, saveSongs } from "@/lib/settings";
+import type { SynthPatch } from "@/synthPatch";
 import { dayPhase, formatHour } from "@/lib/time";
 import type { CityId, StepHit } from "@/types";
 
@@ -24,8 +25,7 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [step, setStep] = useState(0);
   const [muted, setMuted] = useState<ReadonlySet<string>>(() => new Set());
-  const [cutoff, setCutoff] = useState(SYNTH[stored.cityId].cutoff);
-  const [decay, setDecay] = useState(SYNTH[stored.cityId].decay);
+  const [patches, setPatches] = useState(loadPatches);
   const [armed, setArmed] = useState(SYNTH[stored.cityId].scale[0] ?? 60);
   const [recording, setRecording] = useState(false);
   const [takes, setTakes] = useState<Take[]>([]);
@@ -41,6 +41,7 @@ export default function App() {
   const city = cityById(cityId);
   const synth = SYNTH[cityId];
   const song = songs[cityId];
+  const patch = patches[cityId];
 
   const hits = useMemo(
     () => toHits(city.voices.map((voice) => voice.id), song.drums, song.notes, muted),
@@ -76,8 +77,12 @@ export default function App() {
   }, [bpm, volume]);
 
   useEffect(() => {
-    engineRef.current?.setSynth({ cutoff, decay });
-  }, [cutoff, decay]);
+    engineRef.current?.setSynth(patch);
+  }, [patch]);
+
+  useEffect(() => {
+    savePatches(patches);
+  }, [patches]);
 
   useEffect(() => {
     engineRef.current?.setPattern(hits);
@@ -114,9 +119,12 @@ export default function App() {
   }, [step]);
 
   useEffect(() => {
+    const held = new Map<string, () => void>();
     function onKey(event: KeyboardEvent) {
       const target = event.target;
-      if (target instanceof HTMLElement && target.closest("[data-slot='slider']")) return;
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (target instanceof HTMLElement && target.closest("input, select, textarea, [contenteditable], [role='slider'], [data-slot='slider']")) return;
+      if (event.key === " " && target instanceof HTMLElement && target.closest("button, a, audio")) return;
       if (event.key === " ") {
         event.preventDefault();
         togglePlay();
@@ -126,14 +134,22 @@ export default function App() {
       } else if (event.key === "ArrowLeft") {
         event.preventDefault();
         nudge(-1);
-      } else if (!(target instanceof HTMLElement && target.closest("button"))) {
+      } else {
         const keyIndex = KEY_MAP.indexOf(event.key.toLowerCase());
-        if (keyIndex >= 0) {
-          event.preventDefault();
-          const midi = SYNTH[cityIdRef.current].scale[keyIndex];
-          if (midi != null) playKey(midi);
-        }
+        if (keyIndex < 0) return;
+        event.preventDefault();
+        if (event.repeat || held.has(event.code)) return;
+        const midi = SYNTH[cityIdRef.current].scale[keyIndex];
+        if (midi != null) held.set(event.code, holdKey(midi));
       }
+    }
+    function onKeyUp(event: KeyboardEvent) {
+      held.get(event.code)?.();
+      held.delete(event.code);
+    }
+    function releaseKeys() {
+      for (const release of held.values()) release();
+      held.clear();
     }
     function togglePlay() {
       const engine = engineRef.current;
@@ -154,7 +170,14 @@ export default function App() {
       if (!playingRef.current) engine?.previewStep();
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", releaseKeys);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", releaseKeys);
+      releaseKeys();
+    };
   }, []);
 
   function togglePlay() {
@@ -177,23 +200,36 @@ export default function App() {
     window.setTimeout(() => setSwitching(false), 280);
     setCityId(id);
     setBpm(next.bpm);
-    setCutoff(tone.cutoff);
-    setDecay(tone.decay);
     setArmed(tone.scale[0] ?? 60);
     setMuted(new Set());
     setStep(0);
     engineRef.current?.jump(0);
   }
 
+  function editPatch(next: SynthPatch) {
+    engineRef.current?.setSynth(next);
+    setPatches((current) => ({ ...current, [cityId]: next }));
+  }
+
   function playKey(midi: number) {
-    setArmed(midi);
+    armKey(midi);
     engineRef.current?.previewSynth(midi);
+  }
+
+  function holdKey(midi: number): () => void {
+    armKey(midi);
+    return engineRef.current?.holdSynth(midi) ?? (() => {});
+  }
+
+  function armKey(midi: number) {
+    setArmed(midi);
     if (!recordingRef.current) return;
     const hour = stepRef.current;
+    const id = cityIdRef.current;
     setSongs((current) => {
-      const notes = current[cityIdRef.current].notes.slice();
+      const notes = current[id].notes.slice();
       notes[hour] = midi;
-      return { ...current, [cityIdRef.current]: { ...current[cityIdRef.current], notes } };
+      return { ...current, [id]: { ...current[id], notes } };
     });
   }
 
@@ -356,13 +392,10 @@ export default function App() {
             name={synth.name}
             scale={synth.scale}
             armed={armed}
-            cutoff={cutoff}
-            decay={decay}
-            cutoffDefault={synth.cutoff}
-            decayDefault={synth.decay}
+            patch={patch}
+            onPatch={editPatch}
             onArm={playKey}
-            onCutoff={setCutoff}
-            onDecay={setDecay}
+            onHold={holdKey}
           />
         </div>
         {takes.length > 0 ? (
