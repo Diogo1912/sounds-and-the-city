@@ -22,7 +22,7 @@ export function Credits() {
             <h2 id="credits-title">Credits</h2>
             <form method="dialog"><button className="switch" type="submit" autoFocus>Close</button></form>
           </header>
-          <p><strong>Bo van Burken</strong> came up with the name sounds and the city.</p>
+          <p>Thank you Bo for coming up with the name</p>
           <h3>Amsterdam field recordings</h3>
           <dl>
             {SAMPLE_CREDITS.map(({ track, creator, url }) => (

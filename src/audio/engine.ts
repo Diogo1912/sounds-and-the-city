@@ -4,7 +4,7 @@ import { missedSteps } from "./timing.ts";
 import { startSynthVoice } from "./synth.ts";
 import type { SynthVoice } from "./synth.ts";
 import { makeNoise, triggerVoice } from "./voices.ts";
-import { AMSTERDAM_PATCH } from "../synthPatch.ts";
+import { WARM_BASS_PATCH } from "../synthPatch.ts";
 import type { SynthPatch } from "../synthPatch.ts";
 import { STEP_COUNT, secondsPerStep } from "../lib/time.ts";
 import type { StepHit } from "../types.ts";
@@ -28,7 +28,7 @@ export class Engine {
   private recordChunks: Blob[] = [];
   private recordStepsLeft: number | null = null;
   private recordDest: MediaStreamAudioDestinationNode | null = null;
-  private patch = AMSTERDAM_PATCH;
+  private patch = WARM_BASS_PATCH;
   private synthVoices = new Map<SynthVoice, boolean>();
   private samples = new Map<string, DrumSample>();
   private active = new Map<string, { source: AudioBufferSourceNode; choke: GainNode; start: number; end: number }>();

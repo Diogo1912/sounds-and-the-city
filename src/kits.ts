@@ -10,15 +10,16 @@ export const AMSTERDAM_VOICES: Voice[] = [
   { id: "bridge", name: "Bridge" },
 ];
 
-const DEMO_DRUMS: ReadonlyArray<Readonly<Record<number, number>>> = [
-  { 0: 0.95, 4: 0.75, 8: 0.92, 12: 0.85 },
-  { 2: 0.75, 6: 0.85, 10: 0.82, 14: 0.9 },
-  { 3: 0.55, 7: 0.72, 11: 0.65, 13: 0.66, 15: 0.8 },
-  { 0: 0.52, 8: 0.72, 14: 0.5 },
-  { 4: 0.58, 12: 0.68 },
-  { 8: 0.7 },
-];
-const DEMO_NOTES: Readonly<Record<number, number>> = { 0: 60, 3: 64, 6: 67, 8: 60, 10: 69, 12: 67, 15: 62 };
+// Step numbers match the labels on the instrument.
+const DEMO_HITS: Readonly<Record<string, readonly number[]>> = {
+  tram: [4, 12],
+  bell: [3, 7, 11, 15],
+  cobbles: [1, 5, 9, 13],
+  canal: [],
+  carillon: [],
+  bridge: [1, 9],
+};
+const DEMO_NOTES: Readonly<Record<number, number>> = { 1: 60, 3: 64, 5: 67, 7: 64, 9: 60, 11: 62, 13: 65, 14: 64 };
 
 export function emptySong(): Song {
   return {
@@ -29,8 +30,10 @@ export function emptySong(): Song {
 
 export function demoSong(): Song {
   return {
-    drums: DEMO_DRUMS.map((row) => Array.from({ length: STEP_COUNT }, (_, index) => row[index] ?? 0)),
-    notes: Array.from({ length: STEP_COUNT }, (_, index) => DEMO_NOTES[index] ?? null),
+    drums: AMSTERDAM_VOICES.map(({ id }) =>
+      Array.from({ length: STEP_COUNT }, (_, index) => DEMO_HITS[id]?.includes(index + 1) ? 0.9 : 0),
+    ),
+    notes: Array.from({ length: STEP_COUNT }, (_, index) => DEMO_NOTES[index + 1] ?? null),
   };
 }
 

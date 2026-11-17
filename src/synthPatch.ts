@@ -58,13 +58,15 @@ export const AMSTERDAM_PATCH: SynthPatch = {
   cutoff: 65, filterEnv: 10, decay: 420, sustain: 4, release: 210, level: 78,
 };
 
+export const WARM_BASS_PATCH: SynthPatch = {
+  ...INIT_PATCH, waveA: "triangle", waveB: "square", tuneA: -12, tuneB: -12, mix: 20,
+  sub: 17, cutoff: 53, resonance: 12, filterEnv: 11, attack: 4, decay: 190,
+  sustain: 50, release: 82, drive: 8, level: 70,
+};
+
 export const SYNTH_PRESETS = [
+  { id: "warm-bass", label: "Warm Bass", patch: WARM_BASS_PATCH },
   { id: "canal-keys", label: "Canal Keys", patch: AMSTERDAM_PATCH },
-  { id: "warm-bass", label: "Warm Bass", patch: {
-    ...INIT_PATCH, waveA: "triangle", waveB: "square", tuneA: -12, tuneB: -12, mix: 20,
-    sub: 17, cutoff: 53, resonance: 12, filterEnv: 11, attack: 4, decay: 190,
-    sustain: 50, release: 82, drive: 8, level: 70,
-  } },
   { id: "soft-piano", label: "Soft Piano", patch: {
     ...INIT_PATCH, waveA: "sine", waveB: "triangle", tuneB: 12, detuneB: 3, mix: 26,
     cutoff: 77, filterEnv: 8, attack: 3, decay: 350, sustain: 20, release: 175, level: 80,
