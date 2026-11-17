@@ -1,8 +1,11 @@
 import { emptySongs, isCityId } from "../kits.ts";
+import { CITY_PATCHES, readPatch } from "../synthPatch.ts";
+import type { SynthPatch } from "../synthPatch.ts";
 import type { CityId, Song } from "../types.ts";
 
 const SETTINGS_KEY = "city-rhythm-v4";
 const SONG_KEY = "city-rhythm-songs-v4";
+const PATCH_KEY = "city-rhythm-patches-v1";
 
 export type Settings = {
   cityId: CityId;
@@ -76,4 +79,28 @@ function isSong(value: unknown): value is Song {
 function clamp(value: unknown, min: number, max: number, fallback: number): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, value));
+}
+
+export function loadPatches(): Record<CityId, SynthPatch> {
+  let stored: unknown;
+  try {
+    stored = JSON.parse(localStorage.getItem(PATCH_KEY) ?? "null");
+  } catch {
+    stored = null;
+  }
+  const record = stored && typeof stored === "object" ? stored as Partial<Record<CityId, unknown>> : {};
+  return {
+    "new-york": readPatch(record["new-york"], CITY_PATCHES["new-york"]),
+    amsterdam: readPatch(record.amsterdam, CITY_PATCHES.amsterdam),
+    tokyo: readPatch(record.tokyo, CITY_PATCHES.tokyo),
+    london: readPatch(record.london, CITY_PATCHES.london),
+  };
+}
+
+export function savePatches(patches: Record<CityId, SynthPatch>): void {
+  try {
+    localStorage.setItem(PATCH_KEY, JSON.stringify(patches));
+  } catch {
+    // Private browsing and full storage can still leave patches usable for this session.
+  }
 }

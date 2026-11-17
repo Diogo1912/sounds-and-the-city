@@ -1,5 +1,9 @@
 import { loadSampleBuffers, sampleKey, trackMix } from "./samples.ts";
-import { makeNoise, triggerSynth, triggerVoice } from "./voices.ts";
+import { startSynthVoice } from "./synth.ts";
+import type { SynthVoice } from "./synth.ts";
+import { makeNoise, triggerVoice } from "./voices.ts";
+import { CITY_PATCHES } from "../synthPatch.ts";
+import type { SynthPatch } from "../synthPatch.ts";
 import { secondsPerStep } from "../lib/time.ts";
 import type { CityId, StepHit } from "../types.ts";
 
@@ -17,8 +21,8 @@ export class Engine {
   private recorder: MediaRecorder | null = null;
   private recordChunks: Blob[] = [];
   private recordDest: MediaStreamAudioDestinationNode | null = null;
-  private cutoff = 0.5;
-  private decay = 0.35;
+  private patch = CITY_PATCHES["new-york"];
+  private synthVoices = new Map<SynthVoice, boolean>();
   private samples = new Map<string, AudioBuffer>();
   private active = new Map<string, { source: AudioBufferSourceNode; gain: GainNode }>();
   private samplesReady: Promise<void> = Promise.resolve();
@@ -39,6 +43,7 @@ export class Engine {
   }
 
   setCity(city: CityId): void {
+    if (city !== this.city) this.stopSynthVoices();
     this.city = city;
   }
 
@@ -53,9 +58,12 @@ export class Engine {
     });
   }
 
-  setSynth(next: { cutoff: number; decay: number }): void {
-    this.cutoff = next.cutoff;
-    this.decay = next.decay;
+  setSynth(patch: SynthPatch): void {
+    const previous = this.patch;
+    this.patch = patch;
+    if (previous.cutoff !== patch.cutoff || previous.resonance !== patch.resonance || previous.level !== patch.level) {
+      for (const voice of this.synthVoices.keys()) voice.updateMix(patch);
+    }
   }
 
   setTransport(next: Transport): void {
@@ -91,11 +99,13 @@ export class Engine {
       this.timer = 0;
     }
     this.queue = [];
+    this.stopSynthVoices(true);
   }
 
   jump(index: number): void {
     this.step = index;
     this.queue = [];
+    this.stopSynthVoices(true);
     if (this.playing && this.ctx) this.nextTime = this.ctx.currentTime + 0.04;
   }
 
@@ -119,8 +129,16 @@ export class Engine {
   previewSynth(midi: number): void {
     const ctx = this.ensure();
     if (ctx.state === "suspended") void ctx.resume();
-    if (!this.master) return;
-    triggerSynth(ctx, this.master, this.city, midi, ctx.currentTime + 0.02, 0.9, this.cutoff, this.decay);
+    const time = ctx.currentTime + 0.005;
+    const gate = secondsPerStep(this.bpm) * this.patch.gate / 100;
+    this.playSynth(midi, time, 0.9, false)?.release(time + gate);
+  }
+
+  holdSynth(midi: number): () => void {
+    const ctx = this.ensure();
+    if (ctx.state === "suspended") void ctx.resume();
+    const voice = this.playSynth(midi, ctx.currentTime + 0.005, 0.9, false);
+    return () => voice?.release(ctx.currentTime);
   }
 
   startRecording(): void {
@@ -156,6 +174,7 @@ export class Engine {
 
   dispose(): void {
     this.pause();
+    this.stopSynthVoices();
     void this.ctx?.close();
     this.ctx = null;
     this.master = null;
@@ -208,7 +227,9 @@ export class Engine {
   private playHit(ctx: AudioContext, dest: AudioNode, time: number, hit: StepHit): void {
     if (hit.muted || hit.velocity <= 0) return;
     if (hit.voice === "synth" && hit.note != null) {
-      triggerSynth(ctx, dest, this.city, hit.note, time, hit.velocity, this.cutoff, this.decay);
+      const start = Math.max(time, ctx.currentTime);
+      const gate = secondsPerStep(this.bpm) * this.patch.gate / 100;
+      this.playSynth(hit.note, start, hit.velocity, true)?.release(start + gate);
       return;
     }
     const key = sampleKey(this.city, hit.voice);
@@ -219,6 +240,34 @@ export class Engine {
     }
     if (!this.noise) return;
     triggerVoice(ctx, dest, this.noise, this.city, hit.voice, time, hit.velocity);
+  }
+
+  private playSynth(midi: number, time: number, velocity: number, sequenced: boolean): SynthVoice | undefined {
+    const { ctx, master, noise } = this;
+    if (!ctx || !master || !noise || !Number.isFinite(midi) || midi < 0 || midi > 127) return;
+    if (this.synthVoices.size >= 12) {
+      const oldest = this.synthVoices.keys().next().value;
+      if (oldest) {
+        oldest.stop(ctx.currentTime);
+        this.synthVoices.delete(oldest);
+      }
+    }
+    const voice = startSynthVoice(ctx, master, noise, this.patch, midi, time, velocity, () => {
+      this.synthVoices.delete(voice);
+    });
+    this.synthVoices.set(voice, sequenced);
+    return voice;
+  }
+
+  private stopSynthVoices(sequencedOnly = false): void {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    for (const [voice, sequenced] of this.synthVoices) {
+      if (!sequencedOnly || sequenced) {
+        voice.stop(now);
+        this.synthVoices.delete(voice);
+      }
+    }
   }
 
   private flush(now: number): void {

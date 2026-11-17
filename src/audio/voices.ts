@@ -184,69 +184,6 @@ function drop(ctx: AudioContext, dest: AudioNode, buffer: AudioBuffer, time: num
   noiseBurst(ctx, dest, buffer, time, 0.04 * level, 0.001, 0.03, { type: "highpass", freq: 2000 });
 }
 
-export function triggerSynth(
-  ctx: AudioContext,
-  dest: AudioNode,
-  city: CityId,
-  midi: number,
-  time: number,
-  velocity: number,
-  cutoff: number,
-  decay: number,
-): void {
-  const freq = 440 * 2 ** ((midi - 69) / 12);
-  const peak = 0.2 * Math.max(0, Math.min(1, velocity));
-  const length = 0.08 + Math.max(0, Math.min(1, decay)) * 1.3;
-  const filter = ctx.createBiquadFilter();
-  filter.type = "lowpass";
-  const cut = Math.max(0, Math.min(1, cutoff));
-  filter.frequency.setValueAtTime(160 * 40 ** cut, time);
-  filter.frequency.exponentialRampToValueAtTime(Math.max(80, 160 * 40 ** cut * 0.45), time + length);
-  filter.Q.setValueAtTime(city === "tokyo" ? 7 : 0.8, time);
-  const amp = envelope(ctx, time, peak, 0.005, length);
-  filter.connect(amp);
-  amp.connect(dest);
-
-  if (city === "new-york") {
-    const saw = ctx.createOscillator();
-    saw.type = "sawtooth";
-    saw.frequency.setValueAtTime(freq, time);
-    saw.frequency.exponentialRampToValueAtTime(Math.max(30, freq * 0.7), time + length);
-    saw.connect(filter);
-    saw.start(time);
-    saw.stop(time + length + 0.05);
-    tone(ctx, dest, "sine", freq / 2, freq / 2, time, peak * 0.45, 0.004, length * 0.8);
-    return;
-  }
-
-  if (city === "amsterdam") {
-    tone(ctx, dest, "triangle", freq, freq, time, peak * 0.7, 0.004, length);
-    tone(ctx, dest, "sine", freq * 2, freq * 2, time, peak * 0.18, 0.002, length * 0.45);
-    return;
-  }
-
-  if (city === "tokyo") {
-    const mod = ctx.createOscillator();
-    const amount = ctx.createGain();
-    const carrier = ctx.createOscillator();
-    mod.frequency.setValueAtTime(freq * 2, time);
-    amount.gain.setValueAtTime(freq * 2.4, time);
-    amount.gain.exponentialRampToValueAtTime(1, time + length);
-    mod.connect(amount);
-    amount.connect(carrier.frequency);
-    carrier.frequency.setValueAtTime(freq, time);
-    carrier.connect(filter);
-    mod.start(time);
-    carrier.start(time);
-    mod.stop(time + length + 0.05);
-    carrier.stop(time + length + 0.05);
-    return;
-  }
-
-  tone(ctx, dest, "square", freq, freq, time, peak * 0.35, 0.006, length);
-  tone(ctx, dest, "square", freq * 1.5, freq * 1.5, time, peak * 0.12, 0.006, length * 0.8);
-}
-
 function horn(
   ctx: AudioContext,
   dest: AudioNode,
