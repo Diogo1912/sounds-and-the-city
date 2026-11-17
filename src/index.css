@@ -91,20 +91,41 @@ audio { display: none; }
   letter-spacing: 0.16em;
 }
 .brand-mark {
+  position: relative;
   display: grid;
-  align-items: center;
-  justify-items: center;
-  gap: 2px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: clamp(1px, 0.15vw, 2px);
   width: clamp(22px, 2.8vw, 38px);
   aspect-ratio: 1;
-  padding: 4px;
+  padding: clamp(3px, 0.46vw, 6px);
+  padding-bottom: clamp(5px, 0.56vw, 8px);
+  border: 1px solid #7690a7;
   border-radius: 5px;
-  border: 1px solid #7bd5c573;
-  background: linear-gradient(#7be1cf, #508f87);
-  box-shadow: inset 0 1px #d3fff14f, 0 2px 2px #0007;
+  background: linear-gradient(155deg, #dce8ef, #9cb1c6);
+  box-shadow: inset 0 1px #fff9, inset 0 -1px #39577466, 0 2px 2px #0007;
 }
-.brand-mark i { width: 76%; height: 2px; background: #15352f; border-radius: 2px; }
-.brand-mark i:nth-child(2) { width: 94%; }
+.brand-mark i {
+  width: 100%;
+  height: 71%;
+  background: #395a7d;
+  clip-path: polygon(0 34%, 50% 0, 100% 34%, 100% 100%, 0 100%);
+}
+.brand-mark i:nth-child(2) {
+  height: 90%;
+  clip-path: polygon(0 41%, 18% 41%, 18% 22%, 34% 22%, 34% 0, 66% 0, 66% 22%, 82% 22%, 82% 41%, 100% 41%, 100% 100%, 0 100%);
+}
+.brand-mark i:nth-child(3) {
+  height: 80%;
+  clip-path: polygon(0 41%, 18% 34%, 30% 21%, 35% 0, 65% 0, 70% 21%, 82% 34%, 100% 41%, 100% 100%, 0 100%);
+}
+.brand-mark::after {
+  position: absolute;
+  content: "";
+  inset: auto 13% 11%;
+  height: 1px;
+  background: #395a7d80;
+}
 
 .station-header { grid-template-areas: "brand scope transport record"; }
 .top-scope {
