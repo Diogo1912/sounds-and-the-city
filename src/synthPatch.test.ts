@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadPatch, loadSong, savePatch, saveSong } from "./lib/settings.ts";
-import { AMSTERDAM_PATCH, INIT_PATCH, SYNTH_PRESETS, cutoffHz, readPatch } from "./synthPatch.ts";
+import { AMSTERDAM_PATCH, INIT_PATCH, SYNTH_PRESETS, WARM_BASS_PATCH, cutoffHz, readPatch } from "./synthPatch.ts";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -19,6 +19,12 @@ describe("synth patches", () => {
     });
     expect(readPatch(null, fallback)).toEqual(fallback);
     expect(readPatch(null, fallback)).not.toBe(fallback);
+  });
+
+  it("starts with Warm Bass when no patch is saved", () => {
+    vi.stubGlobal("localStorage", { getItem: () => null });
+    expect(loadPatch()).toEqual(WARM_BASS_PATCH);
+    expect(loadPatch()).not.toBe(WARM_BASS_PATCH);
   });
 
   it("imports the Amsterdam patch and keeps patch edits separate from the song", () => {

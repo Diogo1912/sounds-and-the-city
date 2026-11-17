@@ -1,5 +1,5 @@
 import { AMSTERDAM_VOICES, demoSong, emptySong } from "../kits.ts";
-import { AMSTERDAM_PATCH, readPatch } from "../synthPatch.ts";
+import { AMSTERDAM_PATCH, WARM_BASS_PATCH, readPatch } from "../synthPatch.ts";
 import type { SynthPatch } from "../synthPatch.ts";
 import type { Song } from "../types.ts";
 import { LEGACY_STEP_COUNT, STEP_COUNT, legacyStep } from "./time.ts";
@@ -84,7 +84,9 @@ function isSong(value: unknown, steps: number): value is Song {
 }
 
 export function loadPatch(): SynthPatch {
-  return readPatch(read(PATCH_KEY) ?? field(read("city-rhythm-patches-v1"), "amsterdam"), AMSTERDAM_PATCH);
+  const saved = read(PATCH_KEY) ?? field(read("city-rhythm-patches-v1"), "amsterdam");
+  if (!saved || typeof saved !== "object") return { ...WARM_BASS_PATCH };
+  return readPatch(saved, AMSTERDAM_PATCH);
 }
 
 export function savePatch(patch: SynthPatch): void {

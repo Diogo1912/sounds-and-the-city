@@ -19,7 +19,7 @@ const DEMO_HITS: Readonly<Record<string, readonly number[]>> = {
   carillon: [],
   bridge: [1, 9],
 };
-const DEMO_NOTES: Readonly<Record<number, number>> = { 2: 60, 6: 64, 8: 67, 10: 69, 14: 67, 16: 62 };
+const DEMO_NOTES: Readonly<Record<number, number>> = { 1: 60, 3: 64, 5: 67, 7: 64, 9: 60, 11: 62, 13: 65, 14: 64 };
 
 export function emptySong(): Song {
   return {
