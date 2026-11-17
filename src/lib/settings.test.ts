@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { demoSong, cityById } from "../kits.ts";
-import { loadSongs, saveSongs } from "./settings.ts";
+import { demoSong } from "../kits.ts";
+import { loadSong, saveSong } from "./settings.ts";
 import { secondsPerStep, STEP_COUNT } from "./time.ts";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -25,22 +25,22 @@ describe("16-step patterns", () => {
       setItem: (name: string, value: string) => storage.set(name, value),
     });
 
-    const songs = loadSongs();
-    const { drums, notes } = songs.amsterdam;
+    const song = loadSong();
+    const { drums, notes } = song;
     expect(drums.every((row) => row.length === STEP_COUNT)).toBe(true);
     expect(drums[0]?.[0]).toBe(0.9);
     expect(drums[5]?.[15]).toBe(1);
     expect(notes).toHaveLength(STEP_COUNT);
     expect(notes[0]).toBe(60);
     expect(notes[14]).toBe(65);
-    saveSongs(songs);
-    expect(loadSongs()).toEqual(songs);
+    saveSong(song);
+    expect(loadSong()).toEqual(song);
     expect(storage.get(key)).toBe(original);
   });
 
   it("plays a four-beat bar and starts Demo on the same 16-step grid", () => {
     expect(STEP_COUNT * secondsPerStep(120)).toBe(2);
-    const song = demoSong(cityById("amsterdam"));
+    const song = demoSong();
     expect(song.notes).toHaveLength(STEP_COUNT);
     expect(song.drums.every((row) => row.length === STEP_COUNT)).toBe(true);
   });

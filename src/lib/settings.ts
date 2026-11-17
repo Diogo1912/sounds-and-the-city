@@ -1,121 +1,92 @@
-import { LEGACY_STEP_COUNT, STEP_COUNT, legacyStep } from "./time.ts";
-import { emptySongs, isCityId } from "../kits.ts";
-import { CITY_PATCHES, readPatch } from "../synthPatch.ts";
+import { AMSTERDAM_VOICES, demoSong, emptySong } from "../kits.ts";
+import { AMSTERDAM_PATCH, readPatch } from "../synthPatch.ts";
 import type { SynthPatch } from "../synthPatch.ts";
-import type { CityId, Song } from "../types.ts";
+import type { Song } from "../types.ts";
+import { LEGACY_STEP_COUNT, STEP_COUNT, legacyStep } from "./time.ts";
 
-const SETTINGS_KEY = "city-rhythm-v4";
-const SONG_KEY = "city-rhythm-songs-v5";
-const LEGACY_SONG_KEY = "city-rhythm-songs-v4";
-const PATCH_KEY = "city-rhythm-patches-v1";
+const SETTINGS_KEY = "city-rhythm-amsterdam-settings-v1";
+const SONG_KEY = "city-rhythm-amsterdam-song-v1";
+const PATCH_KEY = "city-rhythm-amsterdam-patch-v1";
 
-export type Settings = {
-  cityId: CityId;
-  bpm: number;
-  volume: number;
-};
+export type Settings = { bpm: number; volume: number };
+export const DEFAULT_SETTINGS: Settings = { bpm: 108, volume: 0.82 };
 
-export const DEFAULT_SETTINGS: Settings = {
-  cityId: "new-york",
-  bpm: 96,
-  volume: 0.82,
-};
-
-export function loadSettings(): Settings {
+function read(key: string): unknown {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return DEFAULT_SETTINGS;
-    const value = parsed as Partial<Settings>;
-    return {
-      cityId: isCityId(value.cityId) ? value.cityId : DEFAULT_SETTINGS.cityId,
-      bpm: clamp(value.bpm, 60, 180, DEFAULT_SETTINGS.bpm),
-      volume: clamp(value.volume, 0, 1, DEFAULT_SETTINGS.volume),
-    };
+    return JSON.parse(localStorage.getItem(key) ?? "null");
   } catch {
-    return DEFAULT_SETTINGS;
+    return null;
   }
 }
 
-export function saveSettings(settings: Settings): void {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-}
-
-export function loadSongs(): Record<CityId, Song> {
-  const songs = emptySongs();
+function write(key: string, value: unknown): void {
   try {
-    const raw = localStorage.getItem(SONG_KEY) ?? localStorage.getItem(LEGACY_SONG_KEY);
-    if (!raw) return songs;
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return songs;
-    const record = parsed as Partial<Record<CityId, Song>>;
-    for (const id of Object.keys(songs) as CityId[]) {
-      const song = record[id];
-      if (!isSong(song)) continue;
-      if (song.notes.length === STEP_COUNT) {
-        songs[id] = { drums: song.drums.map((row) => row.slice()), notes: song.notes.slice() };
-      } else {
-        const next = songs[id];
-        song.drums.forEach((row, voice) => {
-          row.forEach((velocity, index) => {
-            const step = legacyStep(index);
-            next.drums[voice]![step] = Math.max(next.drums[voice]![step] ?? 0, velocity);
-          });
-        });
-        song.notes.forEach((note, index) => {
-          if (note !== null) next.notes[legacyStep(index)] ??= note;
-        });
-      }
-    }
-    return songs;
+    localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    return songs;
+    // Controls remain usable when storage is disabled or full.
   }
 }
 
-export function saveSongs(songs: Record<CityId, Song>): void {
-  localStorage.setItem(SONG_KEY, JSON.stringify(songs));
-}
-
-function isSong(value: unknown): value is Song {
-  if (!value || typeof value !== "object") return false;
-  const song = value as Song;
-  if (!Array.isArray(song.notes)) return false;
-  const stepCount = song.notes.length;
-  if (stepCount !== STEP_COUNT && stepCount !== LEGACY_STEP_COUNT) return false;
-  if (!Array.isArray(song.drums) || song.drums.length !== 6) return false;
-  if (!song.drums.every((row) => Array.isArray(row) && row.length === stepCount && row.every((cell) => typeof cell === "number" && Number.isFinite(cell)))) {
-    return false;
-  }
-  return song.notes.every((note) => note === null || (Number.isInteger(note) && note >= 0 && note <= 127));
+function field(value: unknown, key: string): unknown {
+  return value && typeof value === "object" ? (value as Record<string, unknown>)[key] : undefined;
 }
 
 function clamp(value: unknown, min: number, max: number, fallback: number): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
-  return Math.min(max, Math.max(min, value));
+  return typeof value === "number" && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
 
-export function loadPatches(): Record<CityId, SynthPatch> {
-  let stored: unknown;
-  try {
-    stored = JSON.parse(localStorage.getItem(PATCH_KEY) ?? "null");
-  } catch {
-    stored = null;
-  }
-  const record = stored && typeof stored === "object" ? stored as Partial<Record<CityId, unknown>> : {};
+export function loadSettings(): Settings {
+  const saved = read(SETTINGS_KEY);
+  const legacy = read("city-rhythm-v4");
+  const stored = saved ?? legacy;
+  const bpm = saved || field(legacy, "cityId") === "amsterdam" ? field(stored, "bpm") : undefined;
   return {
-    "new-york": readPatch(record["new-york"], CITY_PATCHES["new-york"]),
-    amsterdam: readPatch(record.amsterdam, CITY_PATCHES.amsterdam),
-    tokyo: readPatch(record.tokyo, CITY_PATCHES.tokyo),
-    london: readPatch(record.london, CITY_PATCHES.london),
+    bpm: clamp(bpm, 60, 180, DEFAULT_SETTINGS.bpm),
+    volume: clamp(field(stored, "volume"), 0, 1, DEFAULT_SETTINGS.volume),
   };
 }
 
-export function savePatches(patches: Record<CityId, SynthPatch>): void {
-  try {
-    localStorage.setItem(PATCH_KEY, JSON.stringify(patches));
-  } catch {
-    // Private browsing and full storage can still leave patches usable for this session.
-  }
+export function saveSettings(settings: Settings): void {
+  write(SETTINGS_KEY, settings);
+}
+
+export function loadSong(): Song {
+  const saved = read(SONG_KEY);
+  if (isSong(saved, STEP_COUNT)) return saved;
+  const previous = field(read("city-rhythm-songs-v5"), "amsterdam");
+  if (isSong(previous, STEP_COUNT)) return previous;
+  const legacy = field(read("city-rhythm-songs-v4"), "amsterdam");
+  if (!isSong(legacy, LEGACY_STEP_COUNT)) return demoSong();
+  const song = emptySong();
+  legacy.drums.forEach((row, voice) => {
+    row.forEach((velocity, index) => {
+      const step = legacyStep(index);
+      song.drums[voice]![step] = Math.max(song.drums[voice]![step] ?? 0, velocity);
+    });
+  });
+  legacy.notes.forEach((note, index) => {
+    if (note !== null) song.notes[legacyStep(index)] ??= note;
+  });
+  return song;
+}
+
+export function saveSong(song: Song): void {
+  write(SONG_KEY, song);
+}
+
+function isSong(value: unknown, steps: number): value is Song {
+  if (!value || typeof value !== "object") return false;
+  const { notes, drums } = value as Song;
+  return Array.isArray(notes) && notes.length === steps
+    && notes.every((note) => note === null || (Number.isInteger(note) && note >= 0 && note <= 127))
+    && Array.isArray(drums) && drums.length === AMSTERDAM_VOICES.length
+    && drums.every((row) => Array.isArray(row) && row.length === steps && row.every(Number.isFinite));
+}
+
+export function loadPatch(): SynthPatch {
+  return readPatch(read(PATCH_KEY) ?? field(read("city-rhythm-patches-v1"), "amsterdam"), AMSTERDAM_PATCH);
+}
+
+export function savePatch(patch: SynthPatch): void {
+  write(PATCH_KEY, patch);
 }

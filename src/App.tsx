@@ -1,58 +1,42 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Knob } from "@/components/Knob";
-import { ScopeMeter } from "@/components/ScopeMeter";
-import { Sequencer } from "@/components/Sequencer";
-import { SynthPanel } from "@/components/SynthPanel";
-import { TempoDial } from "@/components/TempoDial";
+import { DrumGrid, Piano, SampleGrid, StationHeader } from "@/components/InstrumentPanels";
+import type { Take } from "@/components/InstrumentPanels";
+import { SynthDesigner } from "@/components/SynthDesigner";
 import { Engine } from "@/audio/engine";
-import { CITIES, SYNTH, cityById, demoSong, emptySong, writeCell } from "@/kits";
-import { loadPatches, loadSettings, loadSongs, savePatches, saveSettings, saveSongs } from "@/lib/settings";
+import { AMSTERDAM_VOICES, demoSong, emptySong, writeCell } from "@/kits";
+import { loadPatch, loadSettings, loadSong, savePatch, saveSettings, saveSong } from "@/lib/settings";
 import type { SynthPatch } from "@/synthPatch";
-import { formatStep, STEP_COUNT } from "@/lib/time";
+import { STEP_COUNT } from "@/lib/time";
 import { PIANO_KEYS, pianoMidi } from "@/lib/notes";
-import type { CityId, StepHit } from "@/types";
-
-type Take = { id: number; url: string; city: string; extension: string };
-
-function cityOctave(city: CityId) {
-  return Math.floor((SYNTH[city].scale[0] ?? 60) / 12) - 1;
-}
+import type { StepHit } from "@/types";
 
 export default function App() {
   const stored = useState(loadSettings)[0];
-  const [cityId, setCityId] = useState<CityId>(stored.cityId);
   const [bpm, setBpm] = useState(stored.bpm);
   const [volume, setVolume] = useState(stored.volume);
-  const [songs, setSongs] = useState(loadSongs);
+  const [song, setSong] = useState(loadSong);
   const [playing, setPlaying] = useState(false);
   const [step, setStep] = useState(0);
   const [muted, setMuted] = useState<ReadonlySet<string>>(() => new Set());
-  const [patches, setPatches] = useState(loadPatches);
-  const [octave, setOctave] = useState(() => cityOctave(stored.cityId));
+  const [patch, setPatch] = useState(loadPatch);
+  const [octave, setOctave] = useState(4);
   const octaveRef = useRef(octave);
   const [armed, setArmed] = useState(() => pianoMidi(octave));
   const [recording, setRecording] = useState(false);
   const [takes, setTakes] = useState<Take[]>([]);
   const [recordError, setRecordError] = useState("");
   const [savingTake, setSavingTake] = useState(false);
-  const [switching, setSwitching] = useState(false);
+  const [activeNotes, setActiveNotes] = useState<ReadonlyMap<number, number>>(() => new Map());
   const engineRef = useRef<Engine | null>(null);
   const playingRef = useRef(false);
   const stepRef = useRef(0);
   const recordingRef = useRef(false);
   const loopedRef = useRef(false);
-  const cityIdRef = useRef(cityId);
   const takesRef = useRef<Take[]>([]);
 
-  const city = cityById(cityId);
-  const synth = SYNTH[cityId];
-  const song = songs[cityId];
-  const patch = patches[cityId];
-
   const hits = useMemo(
-    () => toHits(city.voices.map((voice) => voice.id), song.drums, song.notes, muted),
-    [city, song, muted],
+    () => toHits(AMSTERDAM_VOICES.map((voice) => voice.id), song.drums, song.notes, muted),
+    [song, muted],
   );
 
   useEffect(() => {
@@ -76,10 +60,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    engineRef.current?.setCity(cityId);
-  }, [cityId]);
-
-  useEffect(() => {
     engineRef.current?.setTransport({ bpm, volume });
   }, [bpm, volume]);
 
@@ -88,24 +68,20 @@ export default function App() {
   }, [patch]);
 
   useEffect(() => {
-    savePatches(patches);
-  }, [patches]);
+    savePatch(patch);
+  }, [patch]);
 
   useEffect(() => {
     engineRef.current?.setPattern(hits);
   }, [hits]);
 
   useEffect(() => {
-    saveSettings({ cityId, bpm, volume });
-  }, [cityId, bpm, volume]);
+    saveSettings({ bpm, volume });
+  }, [bpm, volume]);
 
   useEffect(() => {
-    saveSongs(songs);
-  }, [songs]);
-
-  useEffect(() => {
-    cityIdRef.current = cityId;
-  }, [cityId]);
+    saveSong(song);
+  }, [song]);
 
   useEffect(() => {
     const urls = new Set(takes.map((take) => take.url));
@@ -132,17 +108,17 @@ export default function App() {
     function onKey(event: KeyboardEvent) {
       const target = event.target;
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
-      if (target instanceof HTMLElement && target.closest("input, select, textarea, [contenteditable], [role='slider'], [data-slot='slider']")) return;
+      if (target instanceof HTMLElement && target.closest("input, select, textarea, [contenteditable], [role='slider']")) return;
       if (event.key === " " && target instanceof HTMLElement && target.closest("button, a, audio")) return;
       if (event.key === " ") {
         event.preventDefault();
         togglePlay();
       } else if (event.key === "ArrowRight") {
         event.preventDefault();
-        nudge(1);
+        jump((stepRef.current + 1) % STEP_COUNT);
       } else if (event.key === "ArrowLeft") {
         event.preventDefault();
-        nudge(-1);
+        jump((stepRef.current - 1 + STEP_COUNT) % STEP_COUNT);
       } else {
         const keyIndex = PIANO_KEYS.indexOf(event.key.toLowerCase());
         if (keyIndex < 0) return;
@@ -158,27 +134,6 @@ export default function App() {
     function releaseKeys() {
       for (const release of held.values()) release();
       held.clear();
-    }
-    function togglePlay() {
-      const engine = engineRef.current;
-      if (!engine) return;
-      if (recordingRef.current) {
-        void finishTake();
-      } else if (playingRef.current) {
-        engine.pause();
-        setPlaying(false);
-      } else {
-        engine.play();
-        setPlaying(true);
-      }
-    }
-    function nudge(delta: number) {
-      if (recordingRef.current) return;
-      const next = (stepRef.current + delta + STEP_COUNT) % STEP_COUNT;
-      const engine = engineRef.current;
-      engine?.jump(next);
-      setStep(next);
-      if (!playingRef.current) engine?.previewStep();
     }
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKeyUp);
@@ -196,26 +151,13 @@ export default function App() {
     if (!engine) return;
     if (recordingRef.current) {
       void finishTake();
-    } else if (playing) {
+    } else if (playingRef.current) {
       engine.pause();
       setPlaying(false);
     } else {
       engine.play();
       setPlaying(true);
     }
-  }
-
-  function chooseCity(id: CityId) {
-    if (id === cityId || recordingRef.current) return;
-    const next = cityById(id);
-    setSwitching(true);
-    window.setTimeout(() => setSwitching(false), 280);
-    setCityId(id);
-    setBpm(next.bpm);
-    changeOctave(cityOctave(id));
-    setMuted(new Set());
-    setStep(0);
-    engineRef.current?.jump(0);
   }
 
   function changeOctave(next: number) {
@@ -226,7 +168,7 @@ export default function App() {
 
   function editPatch(next: SynthPatch) {
     engineRef.current?.setSynth(next);
-    setPatches((current) => ({ ...current, [cityId]: next }));
+    setPatch(next);
   }
 
   function playKey(midi: number) {
@@ -236,18 +178,28 @@ export default function App() {
 
   function holdKey(midi: number): () => void {
     armKey(midi);
-    return engineRef.current?.holdSynth(midi) ?? (() => {});
+    const releaseVoice = engineRef.current?.holdSynth(midi);
+    setActiveNotes((current) => new Map(current).set(midi, (current.get(midi) ?? 0) + 1));
+    return () => {
+      releaseVoice?.();
+      setActiveNotes((current) => {
+        const next = new Map(current);
+        const count = next.get(midi) ?? 0;
+        if (count <= 1) next.delete(midi);
+        else next.set(midi, count - 1);
+        return next;
+      });
+    };
   }
 
   function armKey(midi: number) {
     setArmed(midi);
     if (!recordingRef.current) return;
     const hour = stepRef.current;
-    const id = cityIdRef.current;
-    setSongs((current) => {
-      const notes = current[id].notes.slice();
+    setSong((current) => {
+      const notes = current.notes.slice();
       notes[hour] = midi;
-      return { ...current, [id]: { ...current[id], notes } };
+      return { ...current, notes };
     });
   }
 
@@ -256,32 +208,29 @@ export default function App() {
     const engine = engineRef.current;
     engine?.jump(index);
     setStep(index);
-    if (!playing) engine?.previewStep();
+    if (!playingRef.current) engine?.previewStep();
   }
 
   function write(voice: number, index: number, velocity: number) {
-    setSongs((current) => ({
-      ...current,
-      [cityId]: { ...current[cityId], drums: writeCell(current[cityId].drums, voice, index, velocity) },
-    }));
+    setSong((current) => ({ ...current, drums: writeCell(current.drums, voice, index, velocity) }));
   }
 
   function writeNote(hour: number, currentNote: number | null) {
     const midi = currentNote == null ? armed : null;
     if (midi != null) engineRef.current?.previewSynth(midi);
-    setSongs((current) => {
-      const notes = current[cityId].notes.slice();
+    setSong((current) => {
+      const notes = current.notes.slice();
       notes[hour] = midi;
-      return { ...current, [cityId]: { ...current[cityId], notes } };
+      return { ...current, notes };
     });
   }
 
   function reset() {
-    setSongs((current) => ({ ...current, [cityId]: emptySong() }));
+    setSong(emptySong());
   }
 
   function demo() {
-    setSongs((current) => ({ ...current, [cityId]: demoSong(city) }));
+    setSong(demoSong());
   }
 
   function toggleRecord() {
@@ -310,7 +259,6 @@ export default function App() {
     loopedRef.current = false;
     setRecording(false);
     setSavingTake(true);
-    const city = cityById(cityIdRef.current).label;
     const engine = engineRef.current;
     engine?.pause();
     setPlaying(false);
@@ -324,7 +272,7 @@ export default function App() {
       const extension = blob.type.includes("mp4") ? "m4a"
         : blob.type.includes("ogg") ? "ogg"
           : blob.type.includes("webm") ? "webm" : "audio";
-      setTakes((current) => [{ id: Date.now(), url, city, extension }, ...current].slice(0, 6));
+      setTakes((current) => [{ id: Date.now(), url, extension }, ...current].slice(0, 6));
     } finally {
       setSavingTake(false);
     }
@@ -340,157 +288,32 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <div className={switching ? "face is-switching" : "face"} data-city={cityId}>
-        <header className="transport">
-          <div className={`plate plate-${cityId}`}>
-            <span>City Rhythm</span>
-            <strong>{city.label}</strong>
-          </div>
-          <div className="seg" role="group" aria-label="City">
-            {CITIES.map((item) => (
-              <Button
-                key={item.id}
-                type="button"
-                variant="outline"
-                aria-pressed={item.id === cityId}
-                disabled={recording}
-                className={item.id === cityId ? "is-selected" : undefined}
-                onClick={() => chooseCity(item.id)}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </div>
-          <Button
-            type="button"
-            className={playing ? "play is-on" : "play"}
-            aria-pressed={playing}
-            aria-label={playing ? "Pause" : "Play"}
-            onClick={togglePlay}
-          >
-            {playing ? <PauseMark /> : <PlayMark />}
-          </Button>
-          <p className="lcd" aria-label={`Step ${step + 1} of ${STEP_COUNT}`}>
-            {formatStep(step)}<span>/{STEP_COUNT}</span>
-          </p>
-          <TempoDial city={cityId} value={bpm} resetValue={city.bpm} onChange={setBpm} />
-          <Knob
-            label="Level"
-            kind={cityId === "london" ? "roundel" : cityId === "amsterdam" ? "bell" : "bullet"}
-            size={48}
-            min={0}
-            max={100}
-            value={Math.round(volume * 100)}
-            resetValue={82}
-            onChange={(value) => setVolume(value / 100)}
-          />
-        </header>
-        <div className="workspace">
-          <section className="station-panel drum-panel" aria-label="Drum machine">
-            <header className="panel-header">
-              <h2>Drum machine</h2>
-              <div className="panel-actions">
-                <Button type="button" variant="outline" onClick={demo}>Demo</Button>
-                <Button type="button" variant="outline" onClick={reset}>Reset</Button>
-              </div>
-            </header>
-            <Sequencer
-              city={cityId}
-              voices={city.voices}
-              pattern={song.drums}
-              step={step}
-              muted={muted}
-              onToggleMute={toggleMute}
-              onPreview={(id) => engineRef.current?.preview(id)}
-              onJump={jump}
-              onWrite={write}
-            />
-          </section>
-          <SynthPanel
-            city={cityId}
-            name={synth.name}
-            octave={octave}
-            onOctave={changeOctave}
-            notes={song.notes}
-            step={step}
-            muted={muted.has("synth")}
-            onMute={() => toggleMute("synth")}
-            onWriteNote={writeNote}
-            armed={armed}
-            patch={patch}
-            onPatch={editPatch}
-            onArm={playKey}
-            onHold={holdKey}
-          />
-          <section className="station-panel samples-panel" aria-label={`${city.label} samples`}>
-            <header className="panel-header">
-              <h2>Samples</h2>
-              <span>{city.label}</span>
-            </header>
-            <div className="sample-pads" role="group" aria-label="Sample slots">
-              {Array.from({ length: 9 }, (_, index) => (
-                <button key={index} type="button" disabled aria-label={`Sample ${index + 1}, empty`}>
-                  {formatStep(index)}
-                </button>
-              ))}
-            </div>
-            <p className="panel-status">No samples loaded</p>
-          </section>
-          <section className="station-panel recording-panel" aria-label="Animation and recording">
-            <header className="panel-header">
-              <h2>Animation &amp; recording</h2>
-              <button
-                type="button"
-                className={recording ? "record is-on" : "record"}
-                aria-pressed={recording}
-                disabled={savingTake}
-                onClick={toggleRecord}
-              >
-                <span className="record-cap" />
-                <span>{recording ? "Stop recording" : savingTake ? "Saving…" : "Record"}</span>
-              </button>
-            </header>
-            <div className="city-visual" aria-hidden="true">
-              <div className="rhythm-bars">
-                {city.voices.map((voice, index) => {
-                  const hit = !muted.has(voice.id) && (song.drums[index]?.[step] ?? 0) > 0;
-                  return <span key={voice.id} className={playing && hit ? "is-hit" : undefined} />;
-                })}
-              </div>
-              <div className="visual-steps">
-                {Array.from({ length: STEP_COUNT }, (_, index) => (
-                  <i key={index} className={index === step && playing ? "is-on" : undefined} />
-                ))}
-              </div>
-            </div>
-            <ScopeMeter engineRef={engineRef} />
-            {recordError ? <p className="panel-status" role="status">{recordError}</p> : null}
-            {takes.length > 0 ? (
-              <div className="takes">
-                {takes.map((take) => (
-                  <div key={take.id} className="take">
-                    <span>{take.city}</span>
-                    <audio controls src={take.url} />
-                    <a href={take.url} download={`${take.city.toLowerCase().replaceAll(" ", "-")}-${take.id}.${take.extension}`}>
-                      Download
-                    </a>
-                  </div>
-                ))}
-              </div>
-            ) : !recordError ? <p className="panel-status">Record a loop to preview and download it here.</p> : null}
-          </section>
-        </div>
-        <p className="credits">
-          Credits: mostly CC0. Tokyo Metro horn,{" "}
-          <a href="https://commons.wikimedia.org/wiki/File:TM6000_horn.wav">Wikimedia Commons</a>, CC BY-SA 4.0. Suica beep
-          by <a href="https://freesound.org/people/Hinoki.owo/sounds/796687/">Hinoki.owo</a>, CC BY 4.0. Singing bowl by{" "}
-          <a href="https://commons.wikimedia.org/wiki/User:%D7%93%D7%92_%D7%91%D7%9C%D7%99_%D7%9E%D7%9C%D7%97">דג בלי מלח</a>,{" "}
-          <a href="https://commons.wikimedia.org/wiki/File:Tibetan_Singing_Bowl_hit_4.5inch.flac">Wikimedia Commons</a>, CC
-          BY-SA 4.0.
-        </p>
+    <main className="station">
+      <StationHeader
+        step={step}
+        bpm={bpm} changeBpm={setBpm} volume={volume} changeVolume={setVolume}
+        playing={playing} togglePlay={togglePlay} recording={recording} savingTake={savingTake}
+        toggleRecord={toggleRecord} takes={takes} recordError={recordError} engineRef={engineRef}
+      />
+      <div className="instrument-grid">
+        <DrumGrid
+          pattern={song.drums} voices={AMSTERDAM_VOICES} step={step} muted={muted}
+          preview={(id) => engineRef.current?.preview(id)} mute={toggleMute}
+          jump={jump} write={write} demo={demo} reset={reset}
+        />
+        <SynthDesigner patch={patch} onPatch={editPatch} />
+        <SampleGrid />
+        <Piano
+          octave={octave} changeOctave={changeOctave}
+          armed={armed} active={activeNotes} notes={song.notes} step={step} muted={muted.has("synth")}
+          toggleMute={() => toggleMute("synth")} play={playKey} hold={holdKey} writeNote={writeNote}
+        />
       </div>
-    </div>
+      <footer className="credits">
+        Amsterdam drum samples ·{" "}
+        <a href="https://github.com/Diogo1912/sounds-and-the-city/blob/main/docs/SAMPLES.md">Field recording credits</a>
+      </footer>
+    </main>
   );
 }
 
@@ -516,19 +339,3 @@ function toHits(ids: string[], drums: number[][], notes: (number | null)[], mute
   return hits;
 }
 
-function PlayMark() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-      <path d="M2.2 1.1 L10.6 6 L2.2 10.9 Z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function PauseMark() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-      <rect x="2" y="1" width="2.6" height="10" fill="currentColor" />
-      <rect x="7.4" y="1" width="2.6" height="10" fill="currentColor" />
-    </svg>
-  );
-}

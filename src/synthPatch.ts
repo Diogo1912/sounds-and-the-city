@@ -1,5 +1,3 @@
-import type { CityId } from "./types.ts";
-
 export const WAVEFORMS = ["sine", "triangle", "sawtooth", "square"] as const;
 export const OSC_MODES = ["mix", "fm"] as const;
 export const FILTER_TYPES = ["lowpass", "highpass", "bandpass", "notch"] as const;
@@ -55,24 +53,9 @@ export const INIT_PATCH: SynthPatch = {
   gate: 70, level: 75, drive: 0, pan: 0,
 };
 
-export const CITY_PATCHES: Record<CityId, SynthPatch> = {
-  "new-york": {
-    ...INIT_PATCH, waveA: "sawtooth", sub: 35, cutoff: 35, resonance: 9, filterEnv: 21,
-    attack: 5, decay: 250, sustain: 24, release: 170, level: 65,
-  },
-  amsterdam: {
-    ...INIT_PATCH, waveA: "triangle", waveB: "sine", tuneB: 12, mix: 22,
-    cutoff: 65, filterEnv: 10, decay: 420, sustain: 4, release: 210, level: 78,
-  },
-  tokyo: {
-    ...INIT_PATCH, mode: "fm", waveB: "sine", fmRatio: 2, fmDepth: 30,
-    cutoff: 70, resonance: 15, attack: 3, decay: 300, sustain: 10, release: 210, level: 61,
-  },
-  london: {
-    ...INIT_PATCH, waveA: "square", waveB: "square", tuneB: 7, mix: 24,
-    cutoff: 72, attack: 7, decay: 280, sustain: 67, release: 280,
-    lfoTarget: "amp", lfoRate: 4.2, lfoDepth: 12, level: 59,
-  },
+export const AMSTERDAM_PATCH: SynthPatch = {
+  ...INIT_PATCH, waveA: "triangle", waveB: "sine", tuneB: 12, mix: 22,
+  cutoff: 65, filterEnv: 10, decay: 420, sustain: 4, release: 210, level: 78,
 };
 
 export function cutoffHz(value: number): number {

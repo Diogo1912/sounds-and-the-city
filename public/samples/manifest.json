@@ -1,34 +1,8 @@
 {
-  "new-york": {
-    "subway": "new-york/subway.ogg",
-    "horn": "new-york/horn.ogg",
-    "turnstile": "new-york/turnstile.ogg",
-    "steam": "new-york/steam.ogg",
-    "chime": "new-york/chime.ogg",
-    "hammer": "new-york/hammer.ogg"
-  },
-  "amsterdam": {
-    "tram": "amsterdam/tram.ogg",
-    "bell": "amsterdam/bell.ogg",
-    "cobbles": "amsterdam/cobbles.ogg",
-    "canal": "amsterdam/canal.ogg",
-    "carillon": "amsterdam/carillon.ogg",
-    "bridge": "amsterdam/bridge.ogg"
-  },
-  "tokyo": {
-    "train": "tokyo/train.ogg",
-    "crossing": "tokyo/crossing.ogg",
-    "gate": "tokyo/gate.ogg",
-    "rail": "tokyo/rail.ogg",
-    "door": "tokyo/door.ogg",
-    "bowl": "tokyo/bowl.ogg"
-  },
-  "london": {
-    "bell": "london/bell.ogg",
-    "tube": "london/tube.ogg",
-    "cab": "london/cab.ogg",
-    "bus": "london/bus.ogg",
-    "rain": "london/rain.ogg",
-    "diesel": "london/diesel.ogg"
-  }
+  "tram": "amsterdam/tram.ogg",
+  "bell": "amsterdam/bell.ogg",
+  "cobbles": "amsterdam/cobbles.ogg",
+  "canal": "amsterdam/canal.ogg",
+  "carillon": "amsterdam/carillon.ogg",
+  "bridge": "amsterdam/bridge.ogg"
 }
