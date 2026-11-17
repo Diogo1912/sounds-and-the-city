@@ -1,8 +1,6 @@
 # City Rhythm
 
-A drum machine with four city kits. Each step is an hour, so a pattern is one day in that city.
-
-![New York day, with the bass lane](docs/screenshots/studio-new-york.png)
+A four-panel groovebox with drum kits and synthesizers for New York, Amsterdam, Tokyo, and London.
 
 ## Run
 
@@ -20,24 +18,26 @@ npm run build
 
 ## Play
 
-Pick **New York**, **Amsterdam**, **Tokyo**, or **London**. Each city loads its sounds, a starter day, and a tempo.
+Pick **New York**, **Amsterdam**, **Tokyo**, or **London**. Each city loads its sounds, a starter bar, and a tempo.
 
-- **Play** runs the 24 hours. Space does the same. The clock is the current hour.
-- **Tempo** is the quarter-note BPM. One hour is one beat, so a day lasts `24 × 60 / BPM` seconds.
-- Click a pad to turn that hour on or off. Drag to paint. On a touch screen, tap.
-- Pick a synth key, then click an hour in the bottom row to place the note. Hold a key on screen or use `A S D F G H J K` to play the synth. Click **Edit synth** to open the patch editor.
-- **Demo** loads a day. **Reset** clears it.
-- **Record** captures one pass from 00:00. The take shows up under the rack. Save downloads it.
+- **Play** loops a 16-step bar. Space also toggles playback.
+- **Tempo** sets quarter-note BPM. Each step is a sixteenth note.
+- Click a pad to turn that step on or off. Drag to paint. On a touch screen, tap.
+- Play the chromatic piano or use `A W S E D F T G Y H U J K`. The octave buttons change the keyboard range. Select a key and click a synth step to place the note.
+- **Demo** loads a starter bar. **Reset** clears the drum and synth steps.
+- **Record** captures one bar. Preview and download the take from **Animation & recording**.
 - Click a name to hear that sound. **M** mutes the row.
 
-Patterns and synth patches are saved separately for each city in your browser.
+Patterns and synth patches are saved separately for each city in your browser. Existing 24-step patterns are mapped across the 16-step bar. If two hits land on the same step, the strongest drum hit and the first synth note are kept. The original browser data is retained.
+
+The 3 × 3 **Samples** panel has nine empty slots per city for future samples. The drum machine already uses the field recordings listed below.
 
 ## Shape a synth patch
 
 - **Oscillators** mixes two waveforms or uses oscillator B to frequency-modulate A. Adjust tuning, fine detune, sub oscillator, and noise.
 - **Filter** selects low-pass, high-pass, band-pass, or notch. Cutoff and resonance shape the tone, and the envelope amount sweeps the cutoff as a note plays.
-- **Envelope** sets attack, decay, sustain, and release. Cutoff and decay are on the main synth strip. **LFO** adds pitch vibrato, filter movement, or tremolo.
-- **Output** sets synth level and the percentage of a sequencer step each note is held. Cutoff, resonance, and level respond on held notes. Other sound edits apply to the next note.
+- **Envelope** sets attack, decay, sustain, and release. The filter has its own ADSR and keyboard tracking. **LFO** adds pitch vibrato, filter movement, or tremolo.
+- **Output** sets drive, stereo pan, synth level, and the percentage of a sequencer step each note is held. Cutoff, resonance, level, and pan respond on held notes. Other sound edits apply to the next note.
 - Load any city preset or start with **Init · Sine**. **Reset patch** restores the current city's preset. **Demo** and the transport's **Reset** change the grid only.
 
 Drag a dial vertically or focus it and use the arrow keys. Double-click a dial to restore its city preset value.

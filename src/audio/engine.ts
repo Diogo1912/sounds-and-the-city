@@ -4,7 +4,7 @@ import type { SynthVoice } from "./synth.ts";
 import { makeNoise, triggerVoice } from "./voices.ts";
 import { CITY_PATCHES } from "../synthPatch.ts";
 import type { SynthPatch } from "../synthPatch.ts";
-import { secondsPerStep } from "../lib/time.ts";
+import { STEP_COUNT, secondsPerStep } from "../lib/time.ts";
 import type { CityId, StepHit } from "../types.ts";
 
 type Transport = {
@@ -20,6 +20,7 @@ export class Engine {
   private noise: AudioBuffer | null = null;
   private recorder: MediaRecorder | null = null;
   private recordChunks: Blob[] = [];
+  private recordStepsLeft: number | null = null;
   private recordDest: MediaStreamAudioDestinationNode | null = null;
   private patch = CITY_PATCHES["new-york"];
   private synthVoices = new Map<SynthVoice, boolean>();
@@ -61,7 +62,7 @@ export class Engine {
   setSynth(patch: SynthPatch): void {
     const previous = this.patch;
     this.patch = patch;
-    if (previous.cutoff !== patch.cutoff || previous.resonance !== patch.resonance || previous.level !== patch.level) {
+    if (previous.cutoff !== patch.cutoff || previous.resonance !== patch.resonance || previous.level !== patch.level || previous.pan !== patch.pan) {
       for (const voice of this.synthVoices.keys()) voice.updateMix(patch);
     }
   }
@@ -141,27 +142,45 @@ export class Engine {
     return () => voice?.release(ctx.currentTime);
   }
 
-  startRecording(): void {
+  startRecording(): boolean {
     const ctx = this.ensure();
-    if (!this.compressor || this.recorder) return;
+    if (!this.compressor || this.recorder || typeof MediaRecorder === "undefined") return false;
+    const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((mime) => MediaRecorder.isTypeSupported(mime));
     this.recordChunks = [];
-    this.recordDest = ctx.createMediaStreamDestination();
-    this.compressor.connect(this.recordDest);
-    const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
-    this.recorder = new MediaRecorder(this.recordDest.stream, { mimeType: mime });
-    this.recorder.ondataavailable = (event) => {
-      if (event.data.size > 0) this.recordChunks.push(event.data);
-    };
-    this.recorder.start();
+    const dest = ctx.createMediaStreamDestination();
+    try {
+      const recorder = new MediaRecorder(dest.stream, mimeType ? { mimeType } : undefined);
+      this.compressor.connect(dest);
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) this.recordChunks.push(event.data);
+      };
+      recorder.start();
+      this.recordDest = dest;
+      this.recorder = recorder;
+      this.recordStepsLeft = STEP_COUNT;
+      return true;
+    } catch {
+      try {
+        this.compressor.disconnect(dest);
+      } catch {
+        // Construction can fail before the recording tap is connected.
+      }
+      dest.stream.getTracks().forEach((track) => track.stop());
+      return false;
+    }
   }
 
   stopRecording(): Promise<Blob> {
     const recorder = this.recorder;
+    this.recordStepsLeft = null;
     if (!recorder) return Promise.resolve(new Blob());
     return new Promise((resolve) => {
       recorder.onstop = () => {
-        const blob = new Blob(this.recordChunks, { type: recorder.mimeType || "audio/webm" });
-        if (this.recordDest) this.compressor?.disconnect(this.recordDest);
+        const blob = new Blob(this.recordChunks, { type: recorder.mimeType || "application/octet-stream" });
+        if (this.recordDest) {
+          this.compressor?.disconnect(this.recordDest);
+          this.recordDest.stream.getTracks().forEach((track) => track.stop());
+        }
         this.recordDest = null;
         this.recorder = null;
         this.recordChunks = [];
@@ -209,10 +228,16 @@ export class Engine {
   private tick(runId: number): void {
     if (!this.playing || runId !== this.runId || !this.ctx || !this.master || !this.noise) return;
     const ctx = this.ctx;
-    const horizon = ctx.currentTime + 0.16;
+    const horizon = ctx.currentTime + 0.09;
     while (this.nextTime < horizon) {
       const when = this.nextTime;
-      const count = this.pattern.length || 24;
+      if (this.recordStepsLeft === 0) {
+        this.queue.push({ index: 0, when });
+        this.nextTime = Infinity;
+        break;
+      }
+      if (this.recordStepsLeft !== null) this.recordStepsLeft -= 1;
+      const count = this.pattern.length || STEP_COUNT;
       const index = ((this.step % count) + count) % count;
       for (const hit of this.pattern[index] ?? []) {
         this.playHit(ctx, this.master, when, hit);
@@ -271,7 +296,7 @@ export class Engine {
   }
 
   private flush(now: number): void {
-    while (this.queue.length > 0 && this.queue[0]!.when <= now + 0.02) {
+    while (this.queue.length > 0 && this.queue[0]!.when <= now) {
       const item = this.queue.shift();
       if (item) this.onStep(item.index);
     }

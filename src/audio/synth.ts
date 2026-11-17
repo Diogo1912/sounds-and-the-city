@@ -19,9 +19,6 @@ export function startSynthVoice(
 ): SynthVoice {
   time = Math.max(time, ctx.currentTime);
   const base = 440 * 2 ** ((midi - 69) / 12);
-  const attackEnd = time + patch.attack / 1000;
-  const decayEnd = attackEnd + patch.decay / 1000;
-  const sustain = patch.sustain / 100;
   const filter = ctx.createBiquadFilter();
   filter.type = patch.filter;
   const cutoff = (value: number) => Math.min(cutoffHz(value), ctx.sampleRate * 0.45);
@@ -35,24 +32,38 @@ export function startSynthVoice(
   const output = ctx.createGain();
   const velocityGain = 0.26 * Math.min(1, Math.max(0, velocity));
   output.gain.value = velocityGain * patch.level / 100;
-  filter.connect(amp);
+  const nodes: AudioNode[] = [filter, amp, output];
+  if (patch.drive > 0) {
+    const shaper = ctx.createWaveShaper();
+    const amount = 1 + 9 * patch.drive / 100;
+    const norm = Math.tanh(amount);
+    shaper.curve = Float32Array.from({ length: 257 }, (_, index) => Math.tanh((index / 128 - 1) * amount) / norm);
+    shaper.oversample = "2x";
+    filter.connect(shaper);
+    shaper.connect(amp);
+    nodes.push(shaper);
+  } else {
+    filter.connect(amp);
+  }
   const tremolo = ctx.createGain();
   amp.connect(tremolo);
   tremolo.connect(output);
   const fade = ctx.createGain();
-  output.connect(fade);
+  const pan = ctx.createStereoPanner();
+  pan.pan.value = patch.pan / 100;
+  output.connect(pan);
+  pan.connect(fade);
   fade.connect(dest);
+  nodes.push(tremolo, pan, fade);
 
-  function envelope(param: AudioParam, peak: number) {
-    param.setValueAtTime(0, time);
-    param.linearRampToValueAtTime(peak, attackEnd);
-    param.linearRampToValueAtTime(peak * sustain, decayEnd);
-  }
-  envelope(amp.gain, 1);
-  envelope(filter.detune, patch.filterEnv * 100);
+  const releaseAmp = scheduleEnvelope(amp.gain, time, 0, 1, patch.attack, patch.decay, patch.sustain, patch.release);
+  const tracking = (midi - 60) * patch.keyTrack;
+  const releaseFilter = scheduleEnvelope(
+    filter.detune, time, tracking, patch.filterEnv * 100,
+    patch.filterAttack, patch.filterDecay, patch.filterSustain, patch.filterRelease,
+  );
 
   const sources: AudioScheduledSourceNode[] = [];
-  const nodes: AudioNode[] = [filter, amp, tremolo, output, fade];
   const pitched: OscillatorNode[] = [];
 
   function oscillator(wave: OscillatorType, hz: number) {
@@ -130,23 +141,14 @@ export function startSynthVoice(
       filter.frequency.setTargetAtTime(cutoff(next.cutoff), now, 0.015);
       filter.Q.setTargetAtTime(resonance(next.resonance), now, 0.015);
       output.gain.setTargetAtTime(velocityGain * next.level / 100, now, 0.015);
+      pan.pan.setTargetAtTime(next.pan / 100, now, 0.015);
     },
     release(when) {
       if (released || stopping) return;
       released = true;
       const at = Math.max(time + 0.001, when, ctx.currentTime);
-      const end = at + patch.release / 1000;
-      const value = at < attackEnd
-        ? (at - time) / (attackEnd - time)
-        : at < decayEnd
-          ? 1 + (sustain - 1) * (at - attackEnd) / (decayEnd - attackEnd)
-          : sustain;
-      for (const [param, peak] of [[amp.gain, 1], [filter.detune, patch.filterEnv * 100]] as const) {
-        param.cancelScheduledValues(at);
-        if (at <= decayEnd) param.linearRampToValueAtTime(value * peak, at);
-        else param.setValueAtTime(value * peak, at);
-        param.linearRampToValueAtTime(0, end);
-      }
+      const end = releaseAmp(at);
+      releaseFilter(at);
       for (const source of sources) source.stop(end);
     },
     stop(when) {
@@ -158,5 +160,38 @@ export function startSynthVoice(
       if (end > when) fade.gain.linearRampToValueAtTime(0, end);
       for (const source of sources) source.stop(end);
     },
+  };
+}
+
+function scheduleEnvelope(
+  param: AudioParam,
+  start: number,
+  baseline: number,
+  depth: number,
+  attackMs: number,
+  decayMs: number,
+  sustainPercent: number,
+  releaseMs: number,
+) {
+  const attack = attackMs / 1000;
+  const decay = decayMs / 1000;
+  const sustain = sustainPercent / 100;
+  const peakTime = start + attack;
+  const sustainTime = peakTime + decay;
+  param.setValueAtTime(baseline, start);
+  param.linearRampToValueAtTime(baseline + depth, peakTime);
+  param.linearRampToValueAtTime(baseline + depth * sustain, sustainTime);
+
+  return (at: number) => {
+    const position = at < peakTime ? (at - start) / attack
+      : at < sustainTime ? 1 + (sustain - 1) * (at - peakTime) / decay
+      : sustain;
+    const value = baseline + depth * position;
+    param.cancelScheduledValues(at);
+    if (at <= sustainTime) param.linearRampToValueAtTime(value, at);
+    else param.setValueAtTime(value, at);
+    const end = at + releaseMs / 1000;
+    param.linearRampToValueAtTime(baseline, end);
+    return end;
   };
 }

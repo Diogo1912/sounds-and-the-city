@@ -9,12 +9,15 @@ import { Engine } from "@/audio/engine";
 import { CITIES, SYNTH, cityById, demoSong, emptySong, writeCell } from "@/kits";
 import { loadPatches, loadSettings, loadSongs, savePatches, saveSettings, saveSongs } from "@/lib/settings";
 import type { SynthPatch } from "@/synthPatch";
-import { dayPhase, formatHour } from "@/lib/time";
+import { formatStep, STEP_COUNT } from "@/lib/time";
+import { PIANO_KEYS, pianoMidi } from "@/lib/notes";
 import type { CityId, StepHit } from "@/types";
 
-const KEY_MAP = ["a", "s", "d", "f", "g", "h", "j", "k"];
+type Take = { id: number; url: string; city: string; extension: string };
 
-type Take = { id: number; url: string; city: string; type: string };
+function cityOctave(city: CityId) {
+  return Math.floor((SYNTH[city].scale[0] ?? 60) / 12) - 1;
+}
 
 export default function App() {
   const stored = useState(loadSettings)[0];
@@ -26,9 +29,13 @@ export default function App() {
   const [step, setStep] = useState(0);
   const [muted, setMuted] = useState<ReadonlySet<string>>(() => new Set());
   const [patches, setPatches] = useState(loadPatches);
-  const [armed, setArmed] = useState(SYNTH[stored.cityId].scale[0] ?? 60);
+  const [octave, setOctave] = useState(() => cityOctave(stored.cityId));
+  const octaveRef = useRef(octave);
+  const [armed, setArmed] = useState(() => pianoMidi(octave));
   const [recording, setRecording] = useState(false);
   const [takes, setTakes] = useState<Take[]>([]);
+  const [recordError, setRecordError] = useState("");
+  const [savingTake, setSavingTake] = useState(false);
   const [switching, setSwitching] = useState(false);
   const engineRef = useRef<Engine | null>(null);
   const playingRef = useRef(false);
@@ -101,6 +108,8 @@ export default function App() {
   }, [cityId]);
 
   useEffect(() => {
+    const urls = new Set(takes.map((take) => take.url));
+    for (const take of takesRef.current) if (!urls.has(take.url)) URL.revokeObjectURL(take.url);
     takesRef.current = takes;
   }, [takes]);
 
@@ -135,12 +144,11 @@ export default function App() {
         event.preventDefault();
         nudge(-1);
       } else {
-        const keyIndex = KEY_MAP.indexOf(event.key.toLowerCase());
+        const keyIndex = PIANO_KEYS.indexOf(event.key.toLowerCase());
         if (keyIndex < 0) return;
         event.preventDefault();
         if (event.repeat || held.has(event.code)) return;
-        const midi = SYNTH[cityIdRef.current].scale[keyIndex];
-        if (midi != null) held.set(event.code, holdKey(midi));
+        held.set(event.code, holdKey(pianoMidi(octaveRef.current, keyIndex)));
       }
     }
     function onKeyUp(event: KeyboardEvent) {
@@ -154,7 +162,9 @@ export default function App() {
     function togglePlay() {
       const engine = engineRef.current;
       if (!engine) return;
-      if (playingRef.current) {
+      if (recordingRef.current) {
+        void finishTake();
+      } else if (playingRef.current) {
         engine.pause();
         setPlaying(false);
       } else {
@@ -163,7 +173,8 @@ export default function App() {
       }
     }
     function nudge(delta: number) {
-      const next = (stepRef.current + delta + 24) % 24;
+      if (recordingRef.current) return;
+      const next = (stepRef.current + delta + STEP_COUNT) % STEP_COUNT;
       const engine = engineRef.current;
       engine?.jump(next);
       setStep(next);
@@ -183,7 +194,9 @@ export default function App() {
   function togglePlay() {
     const engine = engineRef.current;
     if (!engine) return;
-    if (playing) {
+    if (recordingRef.current) {
+      void finishTake();
+    } else if (playing) {
       engine.pause();
       setPlaying(false);
     } else {
@@ -193,17 +206,22 @@ export default function App() {
   }
 
   function chooseCity(id: CityId) {
-    if (id === cityId) return;
+    if (id === cityId || recordingRef.current) return;
     const next = cityById(id);
-    const tone = SYNTH[id];
     setSwitching(true);
     window.setTimeout(() => setSwitching(false), 280);
     setCityId(id);
     setBpm(next.bpm);
-    setArmed(tone.scale[0] ?? 60);
+    changeOctave(cityOctave(id));
     setMuted(new Set());
     setStep(0);
     engineRef.current?.jump(0);
+  }
+
+  function changeOctave(next: number) {
+    octaveRef.current = next;
+    setOctave(next);
+    setArmed(pianoMidi(next));
   }
 
   function editPatch(next: SynthPatch) {
@@ -234,6 +252,7 @@ export default function App() {
   }
 
   function jump(index: number) {
+    if (recordingRef.current) return;
     const engine = engineRef.current;
     engine?.jump(index);
     setStep(index);
@@ -271,13 +290,17 @@ export default function App() {
       return;
     }
     const engine = engineRef.current;
-    if (!engine) return;
+    if (!engine || savingTake) return;
+    setRecordError("");
+    if (!engine.startRecording()) {
+      setRecordError("Audio recording is unavailable in this browser.");
+      return;
+    }
     loopedRef.current = false;
     recordingRef.current = true;
     setRecording(true);
     engine.jump(0);
     setStep(0);
-    engine.startRecording();
     engine.play();
     setPlaying(true);
   }
@@ -286,14 +309,25 @@ export default function App() {
     recordingRef.current = false;
     loopedRef.current = false;
     setRecording(false);
+    setSavingTake(true);
+    const city = cityById(cityIdRef.current).label;
     const engine = engineRef.current;
     engine?.pause();
     setPlaying(false);
-    const blob = await engine?.stopRecording();
-    if (!blob || blob.size === 0) return;
-    const url = URL.createObjectURL(blob);
-    const label = cityById(cityIdRef.current).label;
-    setTakes((current) => [{ id: Date.now(), url, city: label, type: blob.type }, ...current].slice(0, 6));
+    try {
+      const blob = await engine?.stopRecording();
+      if (!blob || blob.size === 0) {
+        setRecordError("No audio was captured.");
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const extension = blob.type.includes("mp4") ? "m4a"
+        : blob.type.includes("ogg") ? "ogg"
+          : blob.type.includes("webm") ? "webm" : "audio";
+      setTakes((current) => [{ id: Date.now(), url, city, extension }, ...current].slice(0, 6));
+    } finally {
+      setSavingTake(false);
+    }
   }
 
   function toggleMute(id: string) {
@@ -307,8 +341,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className={switching ? "face is-switching" : "face"} data-city={cityId} data-phase={dayPhase(step)}>
-        {cityId === "amsterdam" ? <span className="ripple" aria-hidden="true" /> : null}
+      <div className={switching ? "face is-switching" : "face"} data-city={cityId}>
         <header className="transport">
           <div className={`plate plate-${cityId}`}>
             <span>City Rhythm</span>
@@ -321,6 +354,7 @@ export default function App() {
                 type="button"
                 variant="outline"
                 aria-pressed={item.id === cityId}
+                disabled={recording}
                 className={item.id === cityId ? "is-selected" : undefined}
                 onClick={() => chooseCity(item.id)}
               >
@@ -337,9 +371,8 @@ export default function App() {
           >
             {playing ? <PauseMark /> : <PlayMark />}
           </Button>
-          <p className="lcd" key={step}>
-            {formatHour(step)}
-            <span>:00</span>
+          <p className="lcd" aria-label={`Step ${step + 1} of ${STEP_COUNT}`}>
+            {formatStep(step)}<span>/{STEP_COUNT}</span>
           </p>
           <TempoDial city={cityId} value={bpm} resetValue={city.bpm} onChange={setBpm} />
           <Knob
@@ -352,65 +385,102 @@ export default function App() {
             resetValue={82}
             onChange={(value) => setVolume(value / 100)}
           />
-          <ScopeMeter engineRef={engineRef} vertical={cityId === "tokyo"} />
-          <Button type="button" variant="outline" onClick={demo}>
-            Demo
-          </Button>
-          <Button type="button" variant="outline" className="reset" onClick={reset}>
-            Reset
-          </Button>
-          <button
-            type="button"
-            className={recording ? "record is-on" : "record"}
-            aria-pressed={recording}
-            onClick={toggleRecord}
-          >
-            <span className="record-cap" />
-            <span>{recording ? "Recording" : "Record"}</span>
-          </button>
         </header>
         <div className="workspace">
-          <Sequencer
-            city={cityId}
-            voices={city.voices}
-            pattern={song.drums}
-            notes={song.notes}
-            synthName={synth.name}
-            step={step}
-            muted={muted}
-            onToggleMute={toggleMute}
-            onPreview={(id) => {
-              if (id === "synth" && song.notes[step] != null) engineRef.current?.previewSynth(song.notes[step]);
-              else engineRef.current?.preview(id);
-            }}
-            onJump={jump}
-            onWrite={write}
-            onWriteNote={writeNote}
-          />
+          <section className="station-panel drum-panel" aria-label="Drum machine">
+            <header className="panel-header">
+              <h2>Drum machine</h2>
+              <div className="panel-actions">
+                <Button type="button" variant="outline" onClick={demo}>Demo</Button>
+                <Button type="button" variant="outline" onClick={reset}>Reset</Button>
+              </div>
+            </header>
+            <Sequencer
+              city={cityId}
+              voices={city.voices}
+              pattern={song.drums}
+              step={step}
+              muted={muted}
+              onToggleMute={toggleMute}
+              onPreview={(id) => engineRef.current?.preview(id)}
+              onJump={jump}
+              onWrite={write}
+            />
+          </section>
           <SynthPanel
             city={cityId}
             name={synth.name}
-            scale={synth.scale}
+            octave={octave}
+            onOctave={changeOctave}
+            notes={song.notes}
+            step={step}
+            muted={muted.has("synth")}
+            onMute={() => toggleMute("synth")}
+            onWriteNote={writeNote}
             armed={armed}
             patch={patch}
             onPatch={editPatch}
             onArm={playKey}
             onHold={holdKey}
           />
-        </div>
-        {takes.length > 0 ? (
-          <div className="takes">
-            {takes.map((take) => (
-              <div key={take.id} className="take">
-                <span>{take.city}</span>
-                <audio controls src={take.url} />
-                <a href={take.url} download={`${take.city.toLowerCase().replaceAll(" ", "-")}.webm`}>
-                  Save
-                </a>
+          <section className="station-panel samples-panel" aria-label={`${city.label} samples`}>
+            <header className="panel-header">
+              <h2>Samples</h2>
+              <span>{city.label}</span>
+            </header>
+            <div className="sample-pads" role="group" aria-label="Sample slots">
+              {Array.from({ length: 9 }, (_, index) => (
+                <button key={index} type="button" disabled aria-label={`Sample ${index + 1}, empty`}>
+                  {formatStep(index)}
+                </button>
+              ))}
+            </div>
+            <p className="panel-status">No samples loaded</p>
+          </section>
+          <section className="station-panel recording-panel" aria-label="Animation and recording">
+            <header className="panel-header">
+              <h2>Animation &amp; recording</h2>
+              <button
+                type="button"
+                className={recording ? "record is-on" : "record"}
+                aria-pressed={recording}
+                disabled={savingTake}
+                onClick={toggleRecord}
+              >
+                <span className="record-cap" />
+                <span>{recording ? "Stop recording" : savingTake ? "Saving…" : "Record"}</span>
+              </button>
+            </header>
+            <div className="city-visual" aria-hidden="true">
+              <div className="rhythm-bars">
+                {city.voices.map((voice, index) => {
+                  const hit = !muted.has(voice.id) && (song.drums[index]?.[step] ?? 0) > 0;
+                  return <span key={voice.id} className={playing && hit ? "is-hit" : undefined} />;
+                })}
               </div>
-            ))}
-          </div>
-        ) : null}
+              <div className="visual-steps">
+                {Array.from({ length: STEP_COUNT }, (_, index) => (
+                  <i key={index} className={index === step && playing ? "is-on" : undefined} />
+                ))}
+              </div>
+            </div>
+            <ScopeMeter engineRef={engineRef} />
+            {recordError ? <p className="panel-status" role="status">{recordError}</p> : null}
+            {takes.length > 0 ? (
+              <div className="takes">
+                {takes.map((take) => (
+                  <div key={take.id} className="take">
+                    <span>{take.city}</span>
+                    <audio controls src={take.url} />
+                    <a href={take.url} download={`${take.city.toLowerCase().replaceAll(" ", "-")}-${take.id}.${take.extension}`}>
+                      Download
+                    </a>
+                  </div>
+                ))}
+              </div>
+            ) : !recordError ? <p className="panel-status">Record a loop to preview and download it here.</p> : null}
+          </section>
+        </div>
         <p className="credits">
           Credits: mostly CC0. Tokyo Metro horn,{" "}
           <a href="https://commons.wikimedia.org/wiki/File:TM6000_horn.wav">Wikimedia Commons</a>, CC BY-SA 4.0. Suica beep
@@ -425,7 +495,7 @@ export default function App() {
 }
 
 function toHits(ids: string[], drums: number[][], notes: (number | null)[], muted: ReadonlySet<string>): StepHit[][] {
-  const steps = drums[0]?.length ?? 24;
+  const steps = STEP_COUNT;
   const hits: StepHit[][] = Array.from({ length: steps }, () => []);
   ids.forEach((id, voice) => {
     const row = drums[voice] ?? [];
