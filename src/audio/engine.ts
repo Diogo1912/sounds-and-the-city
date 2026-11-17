@@ -1,11 +1,11 @@
-import { loadSampleBuffers, sampleKey, trackMix } from "./samples.ts";
+import { loadSampleBuffers, trackMix } from "./samples.ts";
 import { startSynthVoice } from "./synth.ts";
 import type { SynthVoice } from "./synth.ts";
 import { makeNoise, triggerVoice } from "./voices.ts";
-import { CITY_PATCHES } from "../synthPatch.ts";
+import { AMSTERDAM_PATCH } from "../synthPatch.ts";
 import type { SynthPatch } from "../synthPatch.ts";
 import { STEP_COUNT, secondsPerStep } from "../lib/time.ts";
-import type { CityId, StepHit } from "../types.ts";
+import type { StepHit } from "../types.ts";
 
 type Transport = {
   bpm: number;
@@ -22,7 +22,7 @@ export class Engine {
   private recordChunks: Blob[] = [];
   private recordStepsLeft: number | null = null;
   private recordDest: MediaStreamAudioDestinationNode | null = null;
-  private patch = CITY_PATCHES["new-york"];
+  private patch = AMSTERDAM_PATCH;
   private synthVoices = new Map<SynthVoice, boolean>();
   private samples = new Map<string, AudioBuffer>();
   private active = new Map<string, { source: AudioBufferSourceNode; gain: GainNode }>();
@@ -32,20 +32,14 @@ export class Engine {
   private step = 0;
   private playing = false;
   private runId = 0;
-  private bpm = 96;
+  private bpm = 108;
   private volume = 0.82;
-  private city: CityId = "new-york";
   private pattern: StepHit[][] = [];
   private queue: { index: number; when: number }[] = [];
   private onStep: (step: number) => void;
 
   constructor(onStep: (step: number) => void) {
     this.onStep = onStep;
-  }
-
-  setCity(city: CityId): void {
-    if (city !== this.city) this.stopSynthVoices();
-    this.city = city;
   }
 
   getAnalyser(): AnalyserNode | null {
@@ -114,7 +108,7 @@ export class Engine {
     const ctx = this.ensure();
     if (ctx.state === "suspended") void ctx.resume();
     if (!this.master || !this.noise) return;
-    triggerVoice(ctx, this.master, this.noise, this.city, voice, ctx.currentTime + 0.02, velocity);
+    this.playHit(ctx, this.master, ctx.currentTime + 0.02, { voice, velocity, muted: false });
   }
 
   previewStep(): void {
@@ -257,14 +251,14 @@ export class Engine {
       this.playSynth(hit.note, start, hit.velocity, true)?.release(start + gate);
       return;
     }
-    const key = sampleKey(this.city, hit.voice);
+    const key = hit.voice;
     const buffer = this.samples.get(key);
     if (buffer) {
       this.playSample(ctx, dest, key, buffer, time, hit.velocity);
       return;
     }
     if (!this.noise) return;
-    triggerVoice(ctx, dest, this.noise, this.city, hit.voice, time, hit.velocity);
+    triggerVoice(ctx, dest, this.noise, hit.voice, time, hit.velocity);
   }
 
   private playSynth(midi: number, time: number, velocity: number, sequenced: boolean): SynthVoice | undefined {
