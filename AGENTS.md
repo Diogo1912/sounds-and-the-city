@@ -1,6 +1,6 @@
 # AGENTS.md
 
-City Rhythm is an Amsterdam groovebox. The top strip holds transport, a live waveform, and recording controls. The four panels are drum machine, graphical synth editor, empty sample pads, and piano with a note lane. The bar is 16 sixteenth-note steps.
+sounds and the city is an Amsterdam groovebox. The top strip holds transport, a live waveform, and recording controls. The four panels are drum machine, graphical synth editor, empty sample pads, and piano with a note lane. The bar is 16 sixteenth-note steps.
 
 ## Commands
 
@@ -18,12 +18,12 @@ npm run build     # TypeScript and Vite → dist/
 | --- | --- |
 | `src/App.tsx` | Transport, input, audio engine, pattern and patch state |
 | `src/components/InstrumentPanels.tsx` | Transport strip, drum and sample pads, piano and synth sequence |
-| `src/components/SynthDesigner.tsx` | Oscillator and filter displays, envelope interaction, slider banks |
+| `src/components/SynthDesigner.tsx` | Preset picker, simple controls, advanced oscillator and filter displays, envelope interaction |
 | `src/components/plots.ts`, `patchGeometry.ts` | Canvas sizing, drawing, and envelope geometry |
 | `src/index.css` | Responsive single-viewport instrument layout |
 | `src/kits.ts`, `src/synthPatch.ts` | Amsterdam tracks, demo, synth parameters and preset |
 | `src/audio/engine.ts`, `synth.ts` | Web Audio scheduling, synth graph, recording |
-| `src/audio/samples.ts`, `voices.ts` | Drum sample mix and synthesis fallback |
+| `src/audio/samples.ts`, `voices.ts` | Drum sample mix, attack alignment, and synthesis fallback |
 | `src/lib/settings.ts` | Amsterdam storage and migration from earlier versions |
 
 ## Audio and assets

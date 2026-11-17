@@ -82,7 +82,7 @@ export function StationHeader({
     <header className="station-header">
       <div className="brand">
         <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
-        <div><h1>City Rhythm</h1><small>Amsterdam</small></div>
+        <div><h1>sounds and the city</h1><small>Amsterdam</small></div>
       </div>
       <div className="top-scope">
         <div className="scope-wave"><canvas ref={scope} aria-hidden="true" /></div>

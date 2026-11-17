@@ -58,6 +58,33 @@ export const AMSTERDAM_PATCH: SynthPatch = {
   cutoff: 65, filterEnv: 10, decay: 420, sustain: 4, release: 210, level: 78,
 };
 
+export const SYNTH_PRESETS = [
+  { id: "canal-keys", label: "Canal Keys", patch: AMSTERDAM_PATCH },
+  { id: "warm-bass", label: "Warm Bass", patch: {
+    ...INIT_PATCH, waveA: "triangle", waveB: "square", tuneA: -12, tuneB: -12, mix: 20,
+    sub: 17, cutoff: 53, resonance: 12, filterEnv: 11, attack: 4, decay: 190,
+    sustain: 50, release: 82, drive: 8, level: 70,
+  } },
+  { id: "soft-piano", label: "Soft Piano", patch: {
+    ...INIT_PATCH, waveA: "sine", waveB: "triangle", tuneB: 12, detuneB: 3, mix: 26,
+    cutoff: 77, filterEnv: 8, attack: 3, decay: 350, sustain: 20, release: 175, level: 80,
+  } },
+  { id: "glass-bell", label: "Glass Bell", patch: {
+    ...INIT_PATCH, mode: "fm", waveB: "sine", fmRatio: 3.5, fmDepth: 13,
+    cutoff: 82, attack: 3, decay: 375, sustain: 12, gate: 90, release: 285, level: 66,
+  } },
+  { id: "retro-lead", label: "Retro Lead", patch: {
+    ...INIT_PATCH, waveA: "square", waveB: "sawtooth", mix: 29, detuneB: 7,
+    cutoff: 62, resonance: 14, attack: 7, decay: 240, sustain: 66, gate: 86,
+    lfoRate: 5.3, lfoDepth: 7, release: 108, level: 55,
+  } },
+  { id: "air-pad", label: "Air Pad", patch: {
+    ...INIT_PATCH, waveA: "triangle", waveB: "triangle", mix: 46, detuneB: -16,
+    noise: 7, cutoff: 59, attack: 66, decay: 550, sustain: 80, gate: 97,
+    release: 460, lfoTarget: "filter", lfoRate: 0.5, lfoDepth: 7, level: 60,
+  } },
+] as const satisfies readonly { id: string; label: string; patch: SynthPatch }[];
+
 export function cutoffHz(value: number): number {
   return 45 * (16000 / 45) ** (value / 100);
 }

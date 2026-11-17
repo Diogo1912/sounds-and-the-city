@@ -23,19 +23,37 @@ export function trackMix(key: string): { gain: number; hold: number } {
   return mix ? { gain: mix.gain, hold: mix.hold } : { gain: 0.7, hold: 0.4 };
 }
 
-export async function loadSampleBuffers(ctx: AudioContext): Promise<Map<string, AudioBuffer>> {
-  const loaded = new Map<string, AudioBuffer>();
+export type DrumSample = { buffer: AudioBuffer; offset: number };
+
+export async function loadDrumSamples(ctx: AudioContext, loaded: (track: string, sample: DrumSample) => void): Promise<void> {
   await Promise.all(
-    Object.entries(SAMPLE_BY_TRACK).map(async ([key, file]) => {
+    Object.entries(SAMPLE_BY_TRACK).map(async ([track, file]) => {
       try {
         const response = await fetch(`/samples/${file}`);
         if (!response.ok) return;
         const buffer = await ctx.decodeAudioData(await response.arrayBuffer());
-        loaded.set(key, buffer);
+        loaded(track, { buffer, offset: sampleOnset(buffer.getChannelData(0), buffer.sampleRate) });
       } catch {
         // This track keeps its synthesised hit.
       }
     }),
   );
-  return loaded;
+}
+
+/** Leave a short lead-in ahead of the first audible attack in the mono one-shot. */
+export function sampleOnset(data: Float32Array, sampleRate: number): number {
+  const searchLength = Math.min(data.length, Math.floor(sampleRate * 0.17));
+  const peakLength = Math.min(data.length, Math.floor(sampleRate * 0.35));
+  const window = Math.max(1, Math.round(sampleRate * 0.002));
+  let peak = 0;
+  for (let i = 0; i < peakLength; i++) peak = Math.max(peak, Math.abs(data[i]!));
+  if (peak < 0.001) return 0;
+
+  const thresholdSquared = Math.max(0.001, peak * 0.04) ** 2;
+  for (let i = 0; i + window <= searchLength; i += window) {
+    let energy = 0;
+    for (let j = i; j < i + window; j++) energy += data[j]! ** 2;
+    if (energy / window >= thresholdSquared) return Math.max(0, i / sampleRate - 0.002);
+  }
+  return 0;
 }
