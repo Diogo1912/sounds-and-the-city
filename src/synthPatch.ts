@@ -17,6 +17,11 @@ export const PATCH_RANGES = {
   cutoff: [0, 100, 1],
   resonance: [0, 100, 1],
   filterEnv: [-48, 48, 1],
+  filterAttack: [1, 2000, 1],
+  filterDecay: [5, 2500, 1],
+  filterSustain: [0, 100, 1],
+  filterRelease: [5, 3000, 1],
+  keyTrack: [0, 100, 1],
   attack: [1, 2000, 1],
   decay: [5, 2500, 1],
   sustain: [0, 100, 1],
@@ -25,6 +30,8 @@ export const PATCH_RANGES = {
   lfoDepth: [0, 100, 1],
   gate: [5, 100, 1],
   level: [0, 100, 1],
+  drive: [0, 100, 1],
+  pan: [-100, 100, 1],
 } as const;
 
 export type PatchControl = keyof typeof PATCH_RANGES;
@@ -42,9 +49,10 @@ export const INIT_PATCH: SynthPatch = {
   waveB: "triangle", tuneB: 0, detuneB: 0,
   mode: "mix", mix: 0, fmRatio: 2, fmDepth: 0, sub: 0, noise: 0,
   filter: "lowpass", cutoff: 100, resonance: 0, filterEnv: 0,
+  filterAttack: 5, filterDecay: 260, filterSustain: 15, filterRelease: 160, keyTrack: 0,
   attack: 5, decay: 200, sustain: 75, release: 160,
   lfoWave: "sine", lfoTarget: "pitch", lfoRate: 5, lfoDepth: 0,
-  gate: 70, level: 75,
+  gate: 70, level: 75, drive: 0, pan: 0,
 };
 
 export const CITY_PATCHES: Record<CityId, SynthPatch> = {

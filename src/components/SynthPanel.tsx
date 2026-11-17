@@ -1,15 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Knob } from "@/components/Knob";
 import { CITIES, SYNTH } from "@/kits";
-import { noteName } from "@/lib/notes";
+import { noteName, pianoMidi, PIANO_KEYS } from "@/lib/notes";
 import { CITY_PATCHES, FILTER_TYPES, INIT_PATCH, LFO_TARGETS, OSC_MODES, PATCH_RANGES, WAVEFORMS, cutoffHz } from "@/synthPatch";
 import type { PatchControl, SynthPatch } from "@/synthPatch";
+import { STEP_COUNT } from "@/lib/time";
+import type { CSSProperties } from "react";
 import type { CityId } from "@/types";
 
 type Props = {
   city: CityId;
   name: string;
-  scale: number[];
+  octave: number;
+  onOctave: (octave: number) => void;
+  notes: (number | null)[];
+  step: number;
+  muted: boolean;
+  onMute: () => void;
+  onWriteNote: (step: number, note: number | null) => void;
   armed: number;
   patch: SynthPatch;
   onPatch: (patch: SynthPatch) => void;
@@ -30,10 +38,14 @@ const LABELS: Record<string, string> = {
   pitch: "Pitch", filter: "Filter", amp: "Amplitude",
 };
 
-export function SynthPanel({ city, name, scale, armed, patch, onPatch, onArm, onHold }: Props) {
+const WHITE_KEYS = [0, 2, 4, 5, 7, 9, 11, 12];
+const BLACK_KEYS = [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]];
+
+export function SynthPanel({
+  city, name, octave, onOctave, notes, step, muted, onMute, onWriteNote, armed, patch, onPatch, onArm, onHold,
+}: Props) {
   const kind = KIND[city];
   const defaults = CITY_PATCHES[city];
-  const [expanded, setExpanded] = useState(false);
   const pointers = useRef(new Map<number, () => void>());
 
   useEffect(() => {
@@ -76,47 +88,74 @@ export function SynthPanel({ city, name, scale, armed, patch, onPatch, onArm, on
     );
   }
 
+  function pianoKey(semitone: number, position?: number) {
+    const midi = pianoMidi(octave, semitone);
+    const black = position !== undefined;
+    return (
+      <button
+        key={midi}
+        type="button"
+        className={`piano-key ${black ? "piano-black" : "piano-white"}`}
+        style={black ? { "--key-position": position } as CSSProperties : undefined}
+        aria-label={noteName(midi)}
+        aria-pressed={midi === armed}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return;
+          event.preventDefault();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          pointers.current.set(event.pointerId, onHold(midi));
+        }}
+        onLostPointerCapture={(event) => releasePointer(event.pointerId)}
+        onPointerUp={(event) => releasePointer(event.pointerId)}
+        onPointerCancel={(event) => releasePointer(event.pointerId)}
+        onClick={(event) => {
+          if (event.detail === 0) onArm(midi);
+        }}
+      >
+        <span>{black ? "" : noteName(midi)}</span>
+        <kbd aria-hidden="true">{PIANO_KEYS[semitone]?.toUpperCase()}</kbd>
+      </button>
+    );
+  }
+
   return (
-    <section className="synth" aria-label={`${name} synth`}>
-      <div className="synth-strip">
-        <p className="synth-name">{name}</p>
-        {dial("cutoff", "Cutoff", (value) => `${Math.round(cutoffHz(value))} Hz`, 46)}
-        {dial("decay", "Decay", ms, 46)}
-        <button
-          type="button"
-          className="synth-edit"
-          aria-expanded={expanded}
-          aria-controls="synth-patch"
-          onClick={() => setExpanded(!expanded)}
-        >
-          Edit synth
-        </button>
-        <div className="keys" role="group" aria-label={`${name} keyboard`}>
-          {scale.map((midi) => (
-            <button
-              key={midi}
-              type="button"
-              className={midi === armed ? "key is-on" : "key"}
-              aria-pressed={midi === armed}
-              onPointerDown={(event) => {
-                if (event.button !== 0) return;
-                event.preventDefault();
-                event.currentTarget.setPointerCapture(event.pointerId);
-                pointers.current.set(event.pointerId, onHold(midi));
-              }}
-              onLostPointerCapture={(event) => releasePointer(event.pointerId)}
-              onPointerUp={(event) => releasePointer(event.pointerId)}
-              onPointerCancel={(event) => releasePointer(event.pointerId)}
-              onClick={(event) => {
-                if (event.detail === 0) onArm(midi);
-              }}
-            >
-              {noteName(midi)}
-            </button>
-          ))}
+    <section className="station-panel synth" aria-label={`${name} synth`}>
+      <header className="panel-header">
+        <h2>Synthesizer</h2>
+        <span>{name}</span>
+      </header>
+      <div className="piano-panel">
+        <div className="piano-actions">
+          <div role="group" aria-label="Piano octave">
+            <button type="button" className="synth-edit" aria-label="Octave down" disabled={octave <= 1} onClick={() => onOctave(octave - 1)}>−</button>
+            <span>Octave {octave}</span>
+            <button type="button" className="synth-edit" aria-label="Octave up" disabled={octave >= 6} onClick={() => onOctave(octave + 1)}>+</button>
+          </div>
+          <button type="button" className="synth-edit" aria-pressed={muted} onClick={onMute}>Mute lane</button>
+        </div>
+        <div className="piano" role="group" aria-label="Chromatic piano">
+          {WHITE_KEYS.map((note) => pianoKey(note))}
+          {BLACK_KEYS.map(([note, position]) => pianoKey(note!, position))}
+        </div>
+        <div className="note-lane" role="group" aria-label="Synth sequence">
+          {Array.from({ length: STEP_COUNT }, (_, index) => {
+            const midi = notes[index] ?? null;
+            return (
+              <button
+                key={index}
+                type="button"
+                className={`note-step${index === step ? " is-playhead" : ""}`}
+                aria-label={`Synth step ${index + 1}${midi !== null ? `, ${noteName(midi)}` : ""}`}
+                aria-pressed={midi !== null}
+                onClick={() => onWriteNote(index, midi)}
+              >
+                {midi === null ? index + 1 : noteName(midi)}
+              </button>
+            );
+          })}
         </div>
       </div>
-      <div id="synth-patch" className="synth-patch" hidden={!expanded}>
+      <div className="synth-patch">
         <div className="patch-actions">
           <label>
             Preset
@@ -164,14 +203,26 @@ export function SynthPanel({ city, name, scale, armed, patch, onPatch, onArm, on
             <legend>Filter</legend>
             <div className="patch-controls">
               <Choice label="Type" value={patch.filter} options={FILTER_TYPES} onChange={(value) => set("filter", value)} />
+              {dial("cutoff", "Cutoff", (value) => `${Math.round(cutoffHz(value))} Hz`)}
               {dial("resonance", "Resonance", percent)}
+              {dial("keyTrack", "Key tracking", percent)}
               {dial("filterEnv", "Env amount", semis)}
             </div>
           </fieldset>
           <fieldset>
-            <legend>Envelope</legend>
+            <legend>Filter envelope</legend>
+            <div className="patch-controls">
+              {dial("filterAttack", "Filter attack", ms)}
+              {dial("filterDecay", "Filter decay", ms)}
+              {dial("filterSustain", "Filter sustain", percent)}
+              {dial("filterRelease", "Filter release", ms)}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Amp envelope</legend>
             <div className="patch-controls">
               {dial("attack", "Attack", ms)}
+              {dial("decay", "Decay", ms)}
               {dial("sustain", "Sustain", percent)}
               {dial("release", "Release", ms)}
             </div>
@@ -190,6 +241,8 @@ export function SynthPanel({ city, name, scale, armed, patch, onPatch, onArm, on
             <div className="patch-controls">
               {dial("gate", "Step gate", percent)}
               {dial("level", "Synth level", percent)}
+              {dial("drive", "Drive", percent)}
+              {dial("pan", "Pan", (value) => value === 0 ? "Center" : `${Math.abs(value)} ${value < 0 ? "L" : "R"}`)}
             </div>
           </fieldset>
         </div>

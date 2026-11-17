@@ -1,10 +1,13 @@
 import type { CityId, CityKit, Song, SynthSpec } from "./types.ts";
 
-const HOURS = 24;
+import { STEP_COUNT, legacyStep } from "./lib/time.ts";
 
 function row(hits: Record<number, number>): number[] {
-  const hours = Array.from({ length: HOURS }, () => 0);
-  for (const [hour, velocity] of Object.entries(hits)) hours[Number(hour)] = velocity;
+  const hours = Array.from({ length: STEP_COUNT }, () => 0);
+  for (const [hour, velocity] of Object.entries(hits)) {
+    const index = legacyStep(Number(hour));
+    hours[index] = Math.max(hours[index] ?? 0, velocity);
+  }
   return hours;
 }
 
@@ -96,8 +99,11 @@ export const CITIES: CityKit[] = [
 ];
 
 function notes(hits: Record<number, number>): (number | null)[] {
-  const row: (number | null)[] = Array.from({ length: HOURS }, () => null);
-  for (const [hour, midi] of Object.entries(hits)) row[Number(hour)] = midi;
+  const row: (number | null)[] = Array.from({ length: STEP_COUNT }, () => null);
+  for (const [hour, midi] of Object.entries(hits)) {
+    const index = legacyStep(Number(hour));
+    row[index] ??= midi;
+  }
   return row;
 }
 
@@ -117,8 +123,8 @@ export const DEMO_NOTES: Record<CityId, (number | null)[]> = {
 
 export function emptySong(): Song {
   return {
-    drums: Array.from({ length: 6 }, () => Array.from({ length: HOURS }, () => 0)),
-    notes: Array.from({ length: HOURS }, () => null),
+    drums: Array.from({ length: 6 }, () => Array.from({ length: STEP_COUNT }, () => 0)),
+    notes: Array.from({ length: STEP_COUNT }, () => null),
   };
 }
 

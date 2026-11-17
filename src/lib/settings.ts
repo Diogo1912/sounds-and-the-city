@@ -1,10 +1,12 @@
+import { LEGACY_STEP_COUNT, STEP_COUNT, legacyStep } from "./time.ts";
 import { emptySongs, isCityId } from "../kits.ts";
 import { CITY_PATCHES, readPatch } from "../synthPatch.ts";
 import type { SynthPatch } from "../synthPatch.ts";
 import type { CityId, Song } from "../types.ts";
 
 const SETTINGS_KEY = "city-rhythm-v4";
-const SONG_KEY = "city-rhythm-songs-v4";
+const SONG_KEY = "city-rhythm-songs-v5";
+const LEGACY_SONG_KEY = "city-rhythm-songs-v4";
 const PATCH_KEY = "city-rhythm-patches-v1";
 
 export type Settings = {
@@ -43,7 +45,7 @@ export function saveSettings(settings: Settings): void {
 export function loadSongs(): Record<CityId, Song> {
   const songs = emptySongs();
   try {
-    const raw = localStorage.getItem(SONG_KEY);
+    const raw = localStorage.getItem(SONG_KEY) ?? localStorage.getItem(LEGACY_SONG_KEY);
     if (!raw) return songs;
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return songs;
@@ -51,10 +53,20 @@ export function loadSongs(): Record<CityId, Song> {
     for (const id of Object.keys(songs) as CityId[]) {
       const song = record[id];
       if (!isSong(song)) continue;
-      songs[id] = {
-        drums: song.drums.map((row) => row.slice()),
-        notes: song.notes.slice(),
-      };
+      if (song.notes.length === STEP_COUNT) {
+        songs[id] = { drums: song.drums.map((row) => row.slice()), notes: song.notes.slice() };
+      } else {
+        const next = songs[id];
+        song.drums.forEach((row, voice) => {
+          row.forEach((velocity, index) => {
+            const step = legacyStep(index);
+            next.drums[voice]![step] = Math.max(next.drums[voice]![step] ?? 0, velocity);
+          });
+        });
+        song.notes.forEach((note, index) => {
+          if (note !== null) next.notes[legacyStep(index)] ??= note;
+        });
+      }
     }
     return songs;
   } catch {
@@ -69,11 +81,14 @@ export function saveSongs(songs: Record<CityId, Song>): void {
 function isSong(value: unknown): value is Song {
   if (!value || typeof value !== "object") return false;
   const song = value as Song;
+  if (!Array.isArray(song.notes)) return false;
+  const stepCount = song.notes.length;
+  if (stepCount !== STEP_COUNT && stepCount !== LEGACY_STEP_COUNT) return false;
   if (!Array.isArray(song.drums) || song.drums.length !== 6) return false;
-  if (!song.drums.every((row) => Array.isArray(row) && row.length === 24 && row.every((cell) => typeof cell === "number"))) {
+  if (!song.drums.every((row) => Array.isArray(row) && row.length === stepCount && row.every((cell) => typeof cell === "number" && Number.isFinite(cell)))) {
     return false;
   }
-  return Array.isArray(song.notes) && song.notes.length === 24 && song.notes.every((note) => note === null || typeof note === "number");
+  return song.notes.every((note) => note === null || (Number.isInteger(note) && note >= 0 && note <= 127));
 }
 
 function clamp(value: unknown, min: number, max: number, fallback: number): number {

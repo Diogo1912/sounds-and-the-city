@@ -10,7 +10,7 @@ export type CityKit = {
   label: string;
   bpm: number;
   voices: Voice[];
-  /** Velocity per voice for hours 0–23. */
+  /** Velocity per voice for the 16 steps. */
   pattern: number[][];
 };
 
