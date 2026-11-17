@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import {
-  AMSTERDAM_PATCH, FILTER_TYPES, INIT_PATCH, LFO_TARGETS, OSC_MODES, PATCH_RANGES, WAVEFORMS, cutoffHz,
+  FILTER_TYPES, LFO_TARGETS, OSC_MODES, PATCH_RANGES, SYNTH_PRESETS, WAVEFORMS, cutoffHz,
 } from "@/synthPatch";
 import type { PatchControl, SynthPatch } from "@/synthPatch";
 import { envelopePoints, ENV_POINTS, moveEnvelope, waveform } from "./patchGeometry";
@@ -18,12 +18,16 @@ type Bank = (typeof BANKS)[number];
 const AMP_KEYS = ["attack", "decay", "sustain", "release"] as const;
 const FILTER_KEYS = ["filterAttack", "filterDecay", "filterSustain", "filterRelease"] as const;
 
-type Props = { patch: SynthPatch; onPatch: (patch: SynthPatch) => void };
+type Props = { patch: SynthPatch; onPatch: (patch: SynthPatch) => void; audition: () => void };
 
-export function SynthDesigner({ patch, onPatch }: Props) {
+export function SynthDesigner({ patch, onPatch, audition }: Props) {
+  const [advanced, setAdvanced] = useState(false);
   const [bank, setBank] = useState<Bank>("Voice");
   const [filterEnvelope, setFilterEnvelope] = useState(false);
   const activeHandle = useRef<{ point: EnvelopePoint; pointer: number } | null>(null);
+  const preset = SYNTH_PRESETS.find(({ patch: candidate }) =>
+    (Object.keys(candidate) as (keyof SynthPatch)[]).every((key) => candidate[key] === patch[key]),
+  );
   const keys = filterEnvelope ? FILTER_KEYS : AMP_KEYS;
   const envelope: Envelope = { attack: patch[keys[0]], decay: patch[keys[1]], sustain: patch[keys[2]], release: patch[keys[3]] };
   const points = envelopePoints(envelope);
@@ -93,37 +97,42 @@ export function SynthDesigner({ patch, onPatch }: Props) {
     <section className="module synth-module" aria-label="Synth editor">
       <header className="module-heading">
         <h2>Synthesizer</h2>
-        <div className="module-actions">
+        <div className="module-actions synth-actions">
           <select
-            className="socket preset-choice" value="" aria-label="Load synth preset"
+            className="socket preset-choice" value={preset?.id ?? ""} aria-label="Synth instrument preset"
             onChange={(event) => {
-              onPatch(event.currentTarget.value === "amsterdam" ? { ...AMSTERDAM_PATCH } : { ...INIT_PATCH });
+              const next = SYNTH_PRESETS.find(({ id }) => id === event.currentTarget.value);
+              if (next) onPatch({ ...next.patch });
             }}
           >
-            <option value="" disabled>Presets</option>
-            <option value="amsterdam">Amsterdam pluck</option>
-            <option value="init">Init · Sine</option>
+            <option value="" disabled>Custom sound</option>
+            {SYNTH_PRESETS.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
           </select>
-          <button className="switch reset-patch" type="button" onClick={() => onPatch({ ...AMSTERDAM_PATCH })}>Reset patch</button>
+          <button className="switch" type="button" onClick={audition}>Try note</button>
+          <button className="switch" type="button" aria-expanded={advanced} onClick={() => setAdvanced((value) => !value)}>
+            {advanced ? "Simple" : "Advanced"}
+          </button>
         </div>
       </header>
 
-      <div className="synth-displays">
+      <div className="synth-displays" data-advanced={advanced}>
         <section className="graphic oscillator-display" aria-label="Oscillators">
           <div className="graphic-title">
-            <h3>Oscillators</h3>
-            <Option label="Oscillator routing" value={patch.mode} values={OSC_MODES} names={ROUTING_LABELS} change={(value) => update("mode", value)} />
+            <h3>{advanced ? "Oscillators" : "Waveform"}</h3>
+            <div hidden={!advanced}>
+              <Option label="Oscillator routing" value={patch.mode} values={OSC_MODES} names={ROUTING_LABELS} change={(value) => update("mode", value)} />
+            </div>
           </div>
           <div className="screen wave-display">
             <canvas ref={oscillator} aria-hidden="true" />
           </div>
-          <div className="wave-choices">
+          <div className="wave-choices" hidden={!advanced}>
             <label><span>A</span><Option label="Waveform A" value={patch.waveA} values={WAVEFORMS} names={WAVE_LABELS} change={(value) => update("waveA", value)} /></label>
             <label><span>B</span><Option label="Waveform B" value={patch.waveB} values={WAVEFORMS} names={WAVE_LABELS} change={(value) => update("waveB", value)} /></label>
           </div>
         </section>
 
-        <section className="graphic" aria-label="Filter">
+        <section className="graphic" aria-label="Filter" hidden={!advanced}>
           <div className="graphic-title">
             <h3>Filter</h3>
             <Option label="Filter type" value={patch.filter} values={FILTER_TYPES} names={FILTER_LABELS} change={(value) => update("filter", value)} />
@@ -151,7 +160,7 @@ export function SynthDesigner({ patch, onPatch }: Props) {
           </div>
         </section>
 
-        <section className="graphic env-graphic" aria-label="Envelope designer">
+        <section className="graphic env-graphic" aria-label="Envelope designer" hidden={!advanced}>
           <div className="graphic-title">
             <h3>Envelope</h3>
             <select className="socket" aria-label="Envelope target" value={filterEnvelope ? "filter" : "amp"} onChange={(event) => setFilterEnvelope(event.currentTarget.value === "filter")}>
@@ -214,7 +223,13 @@ export function SynthDesigner({ patch, onPatch }: Props) {
         </section>
       </div>
 
-      <div className="parameter-bank">
+      <div className="simple-synth" hidden={advanced}>
+        {slider("cutoff", "Brightness", hz)}
+        {slider("attack", "Fade in", milliseconds)}
+        {slider("release", "Fade out", milliseconds)}
+        {slider("level", "Volume")}
+      </div>
+      <div className="parameter-bank" hidden={!advanced}>
         <div className="bank-switch" role="group" aria-label="Synth parameter group">
           {BANKS.map((name) => (
             <button key={name} type="button" className="switch" aria-pressed={name === bank} onClick={() => setBank(name)}>{name}</button>
@@ -279,6 +294,7 @@ function Option<T extends string>({ label, value, values, names, change }: {
   );
 }
 
+function milliseconds(value: number) { return value >= 1000 ? `${(value / 1000).toFixed(1)} s` : `${value} ms`; }
 function percent(value: number) { return `${value}%`; }
 function semitones(value: number) { return `${value} st`; }
 function hz(value: number) {

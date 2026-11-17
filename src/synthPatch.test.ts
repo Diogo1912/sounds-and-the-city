@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadPatch, loadSong, savePatch, saveSong } from "./lib/settings.ts";
-import { AMSTERDAM_PATCH, INIT_PATCH, cutoffHz, readPatch } from "./synthPatch.ts";
+import { AMSTERDAM_PATCH, INIT_PATCH, SYNTH_PRESETS, cutoffHz, readPatch } from "./synthPatch.ts";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -39,6 +39,13 @@ describe("synth patches", () => {
 
     expect(loadPatch()).toEqual(patch);
     expect(loadSong()).toEqual(song);
+  });
+
+  it("ships distinct presets that fit the supported patch controls", () => {
+    expect(new Set(SYNTH_PRESETS.map(({ id }) => id)).size).toBe(SYNTH_PRESETS.length);
+    for (const { patch } of SYNTH_PRESETS) {
+      expect(readPatch(patch, INIT_PATCH)).toEqual(patch);
+    }
   });
 
   it("maps cutoff to a useful logarithmic frequency range", () => {

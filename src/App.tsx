@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DrumGrid, Piano, SampleGrid, StationHeader } from "@/components/InstrumentPanels";
 import type { Take } from "@/components/InstrumentPanels";
 import { SynthDesigner } from "@/components/SynthDesigner";
+import { Credits } from "@/components/Credits";
 import { Engine } from "@/audio/engine";
 import { AMSTERDAM_VOICES, demoSong, emptySong, writeCell } from "@/kits";
 import { loadPatch, loadSettings, loadSong, savePatch, saveSettings, saveSong } from "@/lib/settings";
@@ -31,7 +32,6 @@ export default function App() {
   const playingRef = useRef(false);
   const stepRef = useRef(0);
   const recordingRef = useRef(false);
-  const loopedRef = useRef(false);
   const takesRef = useRef<Take[]>([]);
 
   const hits = useMemo(
@@ -40,16 +40,8 @@ export default function App() {
   );
 
   useEffect(() => {
-    const engine = new Engine((index) => {
-      setStep(index);
-      if (!recordingRef.current) return;
-      if (index !== 0) return;
-      if (!loopedRef.current) {
-        loopedRef.current = true;
-        return;
-      }
-      loopedRef.current = false;
-      void finishTake();
+    const engine = new Engine(setStep, () => {
+      if (recordingRef.current) void finishTake();
     });
     engine.preload();
     engineRef.current = engine;
@@ -108,7 +100,7 @@ export default function App() {
     function onKey(event: KeyboardEvent) {
       const target = event.target;
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
-      if (target instanceof HTMLElement && target.closest("input, select, textarea, [contenteditable], [role='slider']")) return;
+      if (target instanceof HTMLElement && target.closest("input, select, textarea, dialog, [contenteditable], [role='slider']")) return;
       if (event.key === " " && target instanceof HTMLElement && target.closest("button, a, audio")) return;
       if (event.key === " ") {
         event.preventDefault();
@@ -245,7 +237,6 @@ export default function App() {
       setRecordError("Audio recording is unavailable in this browser.");
       return;
     }
-    loopedRef.current = false;
     recordingRef.current = true;
     setRecording(true);
     engine.jump(0);
@@ -256,7 +247,6 @@ export default function App() {
 
   async function finishTake() {
     recordingRef.current = false;
-    loopedRef.current = false;
     setRecording(false);
     setSavingTake(true);
     const engine = engineRef.current;
@@ -301,7 +291,7 @@ export default function App() {
           preview={(id) => engineRef.current?.preview(id)} mute={toggleMute}
           jump={jump} write={write} demo={demo} reset={reset}
         />
-        <SynthDesigner patch={patch} onPatch={editPatch} />
+        <SynthDesigner patch={patch} onPatch={editPatch} audition={() => engineRef.current?.previewSynth(armed)} />
         <SampleGrid />
         <Piano
           octave={octave} changeOctave={changeOctave}
@@ -309,10 +299,7 @@ export default function App() {
           toggleMute={() => toggleMute("synth")} play={playKey} hold={holdKey} writeNote={writeNote}
         />
       </div>
-      <footer className="credits">
-        Amsterdam drum samples ·{" "}
-        <a href="https://github.com/Diogo1912/sounds-and-the-city/blob/main/docs/SAMPLES.md">Field recording credits</a>
-      </footer>
+      <Credits />
     </main>
   );
 }

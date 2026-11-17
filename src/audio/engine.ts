@@ -1,4 +1,6 @@
-import { loadSampleBuffers, trackMix } from "./samples.ts";
+import { loadDrumSamples, trackMix } from "./samples.ts";
+import type { DrumSample } from "./samples.ts";
+import { missedSteps } from "./timing.ts";
 import { startSynthVoice } from "./synth.ts";
 import type { SynthVoice } from "./synth.ts";
 import { makeNoise, triggerVoice } from "./voices.ts";
@@ -6,6 +8,10 @@ import { AMSTERDAM_PATCH } from "../synthPatch.ts";
 import type { SynthPatch } from "../synthPatch.ts";
 import { STEP_COUNT, secondsPerStep } from "../lib/time.ts";
 import type { StepHit } from "../types.ts";
+
+const START_LEAD = 0.012;
+const LOOKAHEAD = 0.06;
+const POLL_MS = 12;
 
 type Transport = {
   bpm: number;
@@ -24,9 +30,10 @@ export class Engine {
   private recordDest: MediaStreamAudioDestinationNode | null = null;
   private patch = AMSTERDAM_PATCH;
   private synthVoices = new Map<SynthVoice, boolean>();
-  private samples = new Map<string, AudioBuffer>();
-  private active = new Map<string, { source: AudioBufferSourceNode; gain: GainNode }>();
-  private samplesReady: Promise<void> = Promise.resolve();
+  private samples = new Map<string, DrumSample>();
+  private active = new Map<string, { source: AudioBufferSourceNode; choke: GainNode; start: number; end: number }>();
+  private drumBus: GainNode | null = null;
+  private recordEndTime: number | null = null;
   private timer = 0;
   private nextTime = 0;
   private step = 0;
@@ -37,9 +44,11 @@ export class Engine {
   private pattern: StepHit[][] = [];
   private queue: { index: number; when: number }[] = [];
   private onStep: (step: number) => void;
+  private onRecordingEnd: () => void;
 
-  constructor(onStep: (step: number) => void) {
+  constructor(onStep: (step: number) => void, onRecordingEnd: () => void) {
     this.onStep = onStep;
+    this.onRecordingEnd = onRecordingEnd;
   }
 
   getAnalyser(): AnalyserNode | null {
@@ -48,9 +57,7 @@ export class Engine {
 
   preload(): void {
     const ctx = this.ensure();
-    this.samplesReady = loadSampleBuffers(ctx).then((buffers) => {
-      this.samples = buffers;
-    });
+    void loadDrumSamples(ctx, (track, sample) => this.samples.set(track, sample));
   }
 
   setSynth(patch: SynthPatch): void {
@@ -73,17 +80,18 @@ export class Engine {
   }
 
   play(): void {
-    const ctx = this.ensure();
-    if (ctx.state === "suspended") void ctx.resume();
     if (this.playing) return;
+    const ctx = this.ensure();
     this.playing = true;
     const runId = ++this.runId;
-    void this.samplesReady.then(() => {
+    const start = () => {
       if (!this.playing || runId !== this.runId) return;
-      this.nextTime = ctx.currentTime + 0.05;
-      this.timer = window.setInterval(() => this.tick(runId), 25);
+      this.nextTime = ctx.currentTime + START_LEAD;
+      this.timer = window.setInterval(() => this.tick(runId), POLL_MS);
       this.tick(runId);
-    });
+    };
+    if (ctx.state !== "running") void ctx.resume().then(start, () => this.pause());
+    else start();
   }
 
   pause(): void {
@@ -93,29 +101,41 @@ export class Engine {
       window.clearInterval(this.timer);
       this.timer = 0;
     }
+    const now = this.ctx?.currentTime ?? 0;
+    this.step = this.queue.find((item) => item.when > now)?.index ?? this.step;
     this.queue = [];
+    this.stopDrums();
     this.stopSynthVoices(true);
   }
 
   jump(index: number): void {
     this.step = index;
     this.queue = [];
+    this.stopDrums();
     this.stopSynthVoices(true);
-    if (this.playing && this.ctx) this.nextTime = this.ctx.currentTime + 0.04;
+    if (this.playing && this.ctx) this.nextTime = this.ctx.currentTime + START_LEAD;
+  }
+
+  private stopDrums(): void {
+    const bus = this.drumBus;
+    if (!bus || !this.ctx) return;
+    this.drumBus = null;
+    bus.gain.setTargetAtTime(0, this.ctx.currentTime, 0.003);
+    window.setTimeout(() => bus.disconnect(), 30);
   }
 
   preview(voice: string, velocity = 0.9): void {
     const ctx = this.ensure();
     if (ctx.state === "suspended") void ctx.resume();
     if (!this.master || !this.noise) return;
-    this.playHit(ctx, this.master, ctx.currentTime + 0.02, { voice, velocity, muted: false });
+    this.playHit(ctx, this.master, ctx.currentTime + 0.004, { voice, velocity, muted: false });
   }
 
   previewStep(): void {
     const ctx = this.ensure();
     if (ctx.state === "suspended") void ctx.resume();
     if (!this.master || !this.noise) return;
-    const time = ctx.currentTime + 0.02;
+    const time = ctx.currentTime + 0.004;
     for (const hit of this.pattern[this.step] ?? []) {
       this.playHit(ctx, this.master, time, hit);
     }
@@ -152,6 +172,7 @@ export class Engine {
       this.recordDest = dest;
       this.recorder = recorder;
       this.recordStepsLeft = STEP_COUNT;
+      this.recordEndTime = null;
       return true;
     } catch {
       try {
@@ -167,6 +188,7 @@ export class Engine {
   stopRecording(): Promise<Blob> {
     const recorder = this.recorder;
     this.recordStepsLeft = null;
+    this.recordEndTime = null;
     if (!recorder) return Promise.resolve(new Blob());
     return new Promise((resolve) => {
       recorder.onstop = () => {
@@ -196,7 +218,7 @@ export class Engine {
 
   private ensure(): AudioContext {
     if (this.ctx) return this.ctx;
-    const ctx = new AudioContext();
+    const ctx = new AudioContext({ latencyHint: "interactive" });
     const master = ctx.createGain();
     master.gain.value = this.volume;
     const compressor = ctx.createDynamicsCompressor();
@@ -220,27 +242,43 @@ export class Engine {
   }
 
   private tick(runId: number): void {
-    if (!this.playing || runId !== this.runId || !this.ctx || !this.master || !this.noise) return;
+    if (!this.playing || runId !== this.runId || !this.ctx || !this.master) return;
     const ctx = this.ctx;
-    const horizon = ctx.currentTime + 0.09;
-    while (this.nextTime < horizon) {
-      const when = this.nextTime;
+    if (!this.drumBus) {
+      this.drumBus = ctx.createGain();
+      this.drumBus.connect(this.master);
+    }
+    const duration = secondsPerStep(this.bpm);
+    const count = this.pattern.length || STEP_COUNT;
+    const now = ctx.currentTime;
+    const skipped = missedSteps(this.nextTime, now, duration);
+    const advance = this.recordStepsLeft === null ? skipped : Math.min(skipped, this.recordStepsLeft);
+    if (advance > 0) {
+      this.step = (this.step + advance) % count;
+      this.nextTime += advance * duration;
+      if (this.recordStepsLeft !== null) this.recordStepsLeft -= advance;
+    }
+    while (this.nextTime < now + LOOKAHEAD) {
       if (this.recordStepsLeft === 0) {
-        this.queue.push({ index: 0, when });
+        this.recordEndTime = this.nextTime;
         this.nextTime = Infinity;
         break;
       }
       if (this.recordStepsLeft !== null) this.recordStepsLeft -= 1;
-      const count = this.pattern.length || STEP_COUNT;
-      const index = ((this.step % count) + count) % count;
+      const when = Math.max(this.nextTime, now + 0.003);
+      const index = this.step;
       for (const hit of this.pattern[index] ?? []) {
-        this.playHit(ctx, this.master, when, hit);
+        this.playHit(ctx, this.drumBus, when, hit);
       }
       this.queue.push({ index, when });
       this.step = (index + 1) % count;
-      this.nextTime = when + secondsPerStep(this.bpm);
+      this.nextTime += duration;
     }
-    this.flush(ctx.currentTime);
+    this.flush(now);
+    if (this.recordEndTime !== null && this.recordEndTime <= now) {
+      this.recordEndTime = null;
+      this.onRecordingEnd();
+    }
   }
 
   private playHit(ctx: AudioContext, dest: AudioNode, time: number, hit: StepHit): void {
@@ -252,9 +290,9 @@ export class Engine {
       return;
     }
     const key = hit.voice;
-    const buffer = this.samples.get(key);
-    if (buffer) {
-      this.playSample(ctx, dest, key, buffer, time, hit.velocity);
+    const sample = this.samples.get(key);
+    if (sample) {
+      this.playSample(ctx, dest, key, sample, time, hit.velocity);
       return;
     }
     if (!this.noise) return;
@@ -296,26 +334,42 @@ export class Engine {
     }
   }
 
-  private playSample(ctx: AudioContext, dest: AudioNode, key: string, buffer: AudioBuffer, time: number, velocity: number): void {
+  private playSample(ctx: AudioContext, dest: AudioNode, key: string, sample: DrumSample, time: number, velocity: number): void {
     const previous = this.active.get(key);
-    if (previous) {
-      previous.gain.gain.cancelScheduledValues(time);
-      previous.gain.gain.setValueAtTime(Math.max(previous.gain.gain.value, 0.0001), time);
-      previous.gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.015);
-      previous.source.stop(time + 0.02);
+    if (previous && time < previous.end) {
+      if (time <= previous.start) {
+        previous.choke.gain.setValueAtTime(0, time);
+        previous.source.stop(time);
+      } else {
+        const fadeEnd = Math.min(previous.end, time + 0.012);
+        previous.choke.gain.setValueAtTime(1, time);
+        previous.choke.gain.linearRampToValueAtTime(0, fadeEnd);
+        previous.source.stop(fadeEnd);
+      }
     }
     const mix = trackMix(key);
     const level = Math.min(1.6, Math.max(0.001, velocity) * mix.gain);
     const source = ctx.createBufferSource();
-    source.buffer = buffer;
+    source.buffer = sample.buffer;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(level, time);
-    gain.gain.setValueAtTime(level, time + mix.hold * 0.55);
+    const choke = ctx.createGain();
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.linearRampToValueAtTime(level, time + 0.0015);
+    gain.gain.setValueAtTime(level, time + mix.hold * 0.12);
     gain.gain.exponentialRampToValueAtTime(0.001, time + mix.hold);
     source.connect(gain);
-    gain.connect(dest);
-    source.start(time);
-    source.stop(time + mix.hold + 0.02);
-    this.active.set(key, { source, gain });
+    gain.connect(choke);
+    choke.connect(dest);
+    const end = time + Math.min(mix.hold + 0.01, sample.buffer.duration - sample.offset);
+    const voice = { source, choke, start: time, end };
+    this.active.set(key, voice);
+    source.onended = () => {
+      source.disconnect();
+      gain.disconnect();
+      choke.disconnect();
+      if (this.active.get(key) === voice) this.active.delete(key);
+    };
+    source.start(time, sample.offset);
+    source.stop(end);
   }
 }

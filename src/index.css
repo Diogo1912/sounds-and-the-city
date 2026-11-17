@@ -66,6 +66,8 @@ audio { display: none; }
   padding: var(--inset);
 }
 
+[hidden] { display: none !important; }
+
 .brand {
   grid-area: brand;
   display: flex;
@@ -75,7 +77,7 @@ audio { display: none; }
 }
 .brand h1 {
   margin: 0;
-  font-size: clamp(14px, 1.6vw, 25px);
+  font-size: clamp(13px, 1.55vw, 24px);
   font-weight: 650;
   letter-spacing: -0.055em;
   line-height: 1.04;
@@ -636,4 +638,63 @@ input[type="range"]::-moz-range-thumb {
     grid-template-rows: minmax(0, 1.14fr) minmax(0, 1fr);
     grid-template-areas: "drums synth" "samples piano";
   }
+}
+
+.synth-displays[data-advanced="false"] { grid-template-columns: minmax(0, 1fr); }
+.synth-displays[data-advanced="false"] .oscillator-display { grid-template-rows: auto minmax(0, 1fr); }
+.synth-actions { min-width: 0; }
+.synth-actions .preset-choice { max-width: clamp(78px, 14vw, 150px); }
+.simple-synth {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gap);
+  margin: 0 var(--inset) var(--inset);
+  padding: clamp(4px, 0.9vmin, 10px);
+  border: 1px solid #151d1f;
+  border-radius: 5px;
+  background: #1c2527;
+}
+
+.credits-trigger {
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: max(10px, 0.8vw);
+  line-height: 1.2;
+}
+.credits-trigger:hover { color: var(--accent); }
+.credits-dialog {
+  max-width: min(420px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  width: 100%;
+  padding: 0;
+  margin: auto;
+  color: #e7ebe8;
+  border: 1px solid #536562;
+  border-radius: 9px;
+  background: linear-gradient(155deg, #303b3d, #21292c);
+  box-shadow: inset 0 1px #ffffff26, 0 14px 48px #0009;
+}
+.credits-dialog::backdrop { background: #080d10ac; }
+.credits-sheet { padding: 18px; font-size: 14px; line-height: 1.45; }
+.credits-sheet header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.credits-sheet h2 { margin: 0; font-size: 21px; }
+.credits-sheet h3 { margin: 18px 0 7px; font-size: 14px; }
+.credits-sheet p { margin: 10px 0; }
+.credits-sheet dl { margin: 0; }
+.credits-sheet dl div {
+  display: grid;
+  grid-template-columns: minmax(65px, 0.45fr) minmax(0, 1fr);
+  gap: 8px;
+  padding: 4px 0;
+  border-top: 1px solid #ffffff14;
+}
+.credits-sheet dd { margin: 0; overflow-wrap: anywhere; }
+.credits-sheet .credits-license { color: var(--muted); font-size: 12px; margin-bottom: 0; }
+
+@media (max-width: 410px) {
+  .brand { white-space: normal; }
+  .brand-mark { flex: 0 0 22px; }
+  .simple-synth .parameter-label { display: grid; }
 }
